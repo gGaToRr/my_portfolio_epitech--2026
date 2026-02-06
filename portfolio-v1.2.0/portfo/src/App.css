@@ -1,0 +1,196 @@
+.App {
+  text-align: center;
+}
+body {
+  background-image:url('./components/pictures/bg.jpg');
+  background-size: 30%;
+  backdrop-filter: brightness(100%);
+}
+
+.App-header {
+  display: flex;
+  flex-direction: row;
+
+}
+.App-header-container {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center ;
+  justify-content:top;
+  font-size: calc(10px + 2vmin);
+  color: white;
+  align-items:start;
+  padding: 15px;
+  border-radius: 8px;
+}
+.App-header-container nav {
+  width: 100%;
+}
+.App-header-container nav a {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+}
+.App-header-container nav a button {
+  display: block;
+  width: 100%;
+  height: 50px;
+  text-align: left;
+  font-size: 26px;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  margin: 0;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.App-header-container nav a button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.App-header-container h1 {
+  font-size: 32px;
+}
+img {
+  width: 30px;
+  height: auto;
+}
+.test-menu{
+  z-index: 1000;     /* c'est souvent suffisant */
+  position: fixed;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #282c34;
+  width: 100%;
+  height: auto;
+  visibility:visible;
+  padding-bottom: 20px;
+  border-radius: 8px;
+}
+.title-menu {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 15px;
+  color: white;
+}
+.link {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.link a button {
+  display: block;
+  width: 100%;
+  height: 50px;
+  text-align: center;
+  font-size: 26px;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  margin: 0;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.link a button:hover {background-color: rgba(255, 255, 255, 0.1);
+}
+.hamburger-button {
+visibility: hidden;
+display: flex;
+background: none;
+border: none;
+color: white;
+font-size: 2rem;
+cursor: pointer;
+padding: 10px;
+}
+.croix {
+visibility: hidden;
+background: none;
+border: none;
+color: white;
+cursor: pointer;
+padding: 10px;
+}
+.link-pc a button {
+  display: block;
+  width: 100%;
+  height: 50px;
+  text-align: center;
+  font-size: 26px;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  margin: 0;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.link-pc a button:hover {background-color: rgba(255, 255, 255, 0.1);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@media (max-width: 640px) {
+
+  /* Conteneur de la barre */
+  .App-header-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 30px;
+    width: 100%;
+  }
+  .App-header-container h1 {
+    font-size: 1.2rem;
+    text-align: left;
+    margin: 0;
+    padding: 0;
+  }
+  .App-header-container hr {
+    display: none;
+  }
+  .App-header-container nav {
+    display: flex;
+    flex-direction: row;
+    width: auto;
+  }
+  .App-header-container nav a {
+    display: none;
+  }
+  .hamburger-button {
+visibility: visible;
+display: flex;
+background: none;
+border: none;
+color: white;
+font-size: 2rem;
+cursor: pointer;
+padding: 10px;
+}
+.croix {
+visibility: visible;
+background: none;
+border: none;
+color: white;
+cursor: pointer;
+padding: 10px;
+}
+}
