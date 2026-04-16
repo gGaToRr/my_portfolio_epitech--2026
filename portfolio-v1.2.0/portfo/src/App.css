@@ -1,196 +1,241 @@
-.App {
-  text-align: center;
-}
+/* --- GENERAL STYLES --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background-image:url('./components/pictures/bg.jpg');
-  background-size: 30%;
-  backdrop-filter: brightness(100%);
+  background-image: url('./components/pictures/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: white;
+  font-family: sans-serif;
 }
+img { width: 30px; height: auto; }
 
-.App-header {
-  display: flex;
-  flex-direction: row;
+/* --- APP CONTAINER --- */
+.App { display: flex; flex-direction: row; min-height: 100vh; }
 
-}
+/* --- HEADER (Barre latérale) --- */
+.App-header { width: 310px; flex-shrink: 0; background: rgba(0, 0, 0, 0.2); }
 .App-header-container {
-  background-color: #282c34;
-  min-height: 100vh;
+  position: sticky;
+  top: 20px;
+  margin: 20px;
+  height: calc(100vh - 40px);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  align-items: center ;
-  justify-content:top;
-  font-size: calc(10px + 2vmin);
-  color: white;
-  align-items:start;
-  padding: 15px;
-  border-radius: 8px;
+  padding: 25px;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.7);
 }
-.App-header-container nav {
+.App-header-container h1 { font-size: 28px; margin-bottom: 20px; text-align: left; }
+
+/* --- NAVIGATION PC --- */
+.link-pc { display: flex; flex-direction: column; width: 100%; gap: 10px; }
+.link-pc a { text-decoration: none; }
+.link-pc a button {
   width: 100%;
-}
-.App-header-container nav a {
-  display: block;
-  width: 100%;
-  text-decoration: none;
-}
-.App-header-container nav a button {
-  display: block;
-  width: 100%;
-  height: 50px;
+  padding: 12px;
+  font-size: 18px;
   text-align: left;
-  font-size: 26px;
-  border: none;
   background: transparent;
-  padding: 8px;
-  margin: 0;
   color: white;
-  cursor: pointer;
+  border: 1px solid transparent;
   border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.App-header-container nav a button:hover {
+.link-pc a button:hover { background-color: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+
+/* --- MAIN CONTENT --- */
+.App-Main {
+  flex-grow: 1;
+  min-height: 100vh;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.2);
+}
+.App-Main section { min-height: 80vh; margin-bottom: 100px; }
+
+/* --- Who I Am --- */
+.grid-presentation {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-template-areas: "carte texte" "skills skills";
+  gap: 40px;
+  margin-top: 30px;
+  align-items: start;
+}
+.profile-carte {
+  grid-area: carte;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 30px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  color: #282c34;
+  text-align: center;
+  text-shadow: 0px 1px 2px rgb(0 0 0 / 0.1), 0px 3px 2px rgb(0 0 0 / 0.1), 0px 4px 8px rgb(0 0 0 / 0.1);
+}
+.image-profile {
+  width: 150px;
+  height: 150px;
+  background: #3d4451;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 3px solid #61dafb;
+}
+.about-texte { grid-area: texte; text-align: left; display: flex; flex-direction: column; justify-content: center; height: 100%; }
+.about-texte p {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  color: #282c34;
+  text-shadow: 0px 1px 2px rgb(0 0 0 / 0.1), 0px 3px 2px rgb(0 0 0 / 0.1), 0px 4px 8px rgb(0 0 0 / 0.1);
   background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 20px;
+  padding: 30px;
 }
-.App-header-container h1 {
-  font-size: 32px;
+
+/* --- SECTION OBJECTIVES --- */
+.objectives-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Crée des colonnes auto-adaptatives */
+  gap: 25px;
+  margin-top: 30px;
 }
-img {
-  width: 30px;
-  height: auto;
+
+.objective-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 25px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
-.test-menu{
-  z-index: 1000;     /* c'est souvent suffisant */
+
+.objective-card:hover {
+  transform: translateY(-5px);
+  border-color: #61dafb; /* Rappel du bleu de tes skills */
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.obj-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.obj-number {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #61dafb;
+  opacity: 0.5;
+}
+
+.objective-card h3 {
+  font-size: 1.4rem;
+  color: #61dafb;
+}
+
+.objective-card p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #e0e0e0;
+}
+
+.objective-card ul {
+  list-style: none;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.objective-card ul li {
+  font-size: 0.9rem;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Petit indicateur devant les listes */
+.objective-card ul li::before {
+  content: "→";
+  color: #09ff00; /* Rappel du vert de ton bouton CV */
+  font-weight: bold;
+}
+
+/* --- Skills --- */
+.skill-grid-brody { grid-area: skills; display: flex; flex-wrap: wrap; gap: 15px; padding-top: 20px; }
+.skill-tag {
+  background: rgba(97, 218, 251);
+  text-shadow: 0px 1px 2px rgb(0 0 0 / 0.1), 0px 3px 2px rgb(0 0 0 / 0.1), 0px 4px 8px rgb(0 0 0 / 0.1);
+  color: #282c34;
+  border: 1px solid #61dafb;
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.skill-tag:hover { background: #61dafb; color: #282c34; transform: translateY(-3px); }
+
+/* --- Bouton CV --- */
+.btn-cv {
+  margin-top: 25px;
+  padding: 12px 25px;
+  background: #09ff00;
+  color: #282c34;
+  text-shadow: 0px 1px 2px rgb(0 0 0 / 0.1), 0px 3px 2px rgb(0 0 0 / 0.1), 0px 4px 8px rgb(0 0 0 / 0.1);
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-cv:hover { opacity: 0.8; }
+
+/* --- RESPONSIVE (Tablette < 1024px) --- */
+@media (max-width: 1024px) {
+  .grid-presentation { grid-template-columns: 1fr; grid-template-areas: "carte" "texte" "skills"; text-align: center; }
+  .about-texte { text-align: center; }
+}
+
+/* --- BOUTONS INTERACTIFS --- */
+.hamburger-button, .croix { display: none; background: none; border: none; cursor: pointer; }
+
+/* --- MOBILE MENU OVERLAY --- */
+.test-menu {
   position: fixed;
   top: 0;
-  display: flex;
-  flex-direction: column;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-color: #282c34;
-  width: 100%;
-  height: auto;
-  visibility:visible;
-  padding-bottom: 20px;
-  border-radius: 8px;
-}
-.title-menu {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  margin: 15px;
-  color: white;
-}
-.link {
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  padding: 20px;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease-in-out;
 }
-.link a button {
-  display: block;
-  width: 100%;
-  height: 50px;
-  text-align: center;
-  font-size: 26px;
-  border: none;
-  background: transparent;
-  padding: 8px;
-  margin: 0;
-  color: white;
-  cursor: pointer;
-  border-radius: 8px;
-}
-.link a button:hover {background-color: rgba(255, 255, 255, 0.1);
-}
-.hamburger-button {
-visibility: hidden;
-display: flex;
-background: none;
-border: none;
-color: white;
-font-size: 2rem;
-cursor: pointer;
-padding: 10px;
-}
-.croix {
-visibility: hidden;
-background: none;
-border: none;
-color: white;
-cursor: pointer;
-padding: 10px;
-}
-.link-pc a button {
-  display: block;
-  width: 100%;
-  height: 50px;
-  text-align: center;
-  font-size: 26px;
-  border: none;
-  background: transparent;
-  padding: 8px;
-  margin: 0;
-  color: white;
-  cursor: pointer;
-  border-radius: 8px;
-}
-.link-pc a button:hover {background-color: rgba(255, 255, 255, 0.1);
-}
+.test-menu.open { transform: translateY(0); }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@media (max-width: 640px) {
-
-  /* Conteneur de la barre */
-  .App-header-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 30px;
-    width: 100%;
-  }
-  .App-header-container h1 {
-    font-size: 1.2rem;
-    text-align: left;
-    margin: 0;
-    padding: 0;
-  }
-  .App-header-container hr {
-    display: none;
-  }
-  .App-header-container nav {
-    display: flex;
-    flex-direction: row;
-    width: auto;
-  }
-  .App-header-container nav a {
-    display: none;
-  }
-  .hamburger-button {
-visibility: visible;
-display: flex;
-background: none;
-border: none;
-color: white;
-font-size: 2rem;
-cursor: pointer;
-padding: 10px;
-}
-.croix {
-visibility: visible;
-background: none;
-border: none;
-color: white;
-cursor: pointer;
-padding: 10px;
-}
+/* --- RESPONSIVE (Mobile < 768px) --- */
+@media (max-width: 768px) {
+  .App { flex-direction: column; }
+  .App-header { width: 100%; height: auto; }
+  .App-header-container { height: auto; min-height: 70px; flex-direction: row; justify-content: space-between; align-items: center; position: relative; padding: 10px 20px; }
+  .link-pc { display: none; }
+  .hamburger-button { display: block; }
+  .croix { display: block; }
+  .App-Main { padding: 20px; }
 }
