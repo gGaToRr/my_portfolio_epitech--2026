@@ -1,12 +1,48 @@
+import React from 'react';
 import './App.css';
+import NetworkAnimation from './components/animations/NetworkAnimation';
+import SkillIcons from './components/animations/SkillIcons';
+import ObjectiveDetails from './components/animations/ObjectiveDetails';
 import burger_menu from '../src/components/pictures/burger-bar(1).png';
 import croix_menu from '../src/components/pictures/croix.png';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import * as THREE from 'three';
+import NET from 'vanta/dist/vanta.net.min';
+import { waapi } from 'animejs';
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeObjective, setActiveObjective] = useState(null);
+  const vantaBgRef = useRef(null);
+  const vantaEffect = useRef(null);
 
-  // 1. Centralisation des liens
+  useEffect(() => {
+    if (!vantaEffect.current && vantaBgRef.current) {
+      vantaEffect.current = NET({
+        el: vantaBgRef.current,
+        THREE,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        scale: 1.00,
+        scaleMobile: 1.00,
+        maxDistance: 20.00,
+        color: 0xa729de,
+        backgroundColor: 0xd1224,
+        spacing: 20.00
+      });
+    }
+    return () => {
+      if (vantaEffect.current) {
+        vantaEffect.current.destroy();
+        vantaEffect.current = null;
+      }
+    };
+  }, []);
+
+  // Centralisation des liens
   const menuLinks = [
     { name: "Who I am.", href: "#who" },
     { name: "My objectives", href: "#objectives" },
@@ -14,7 +50,7 @@ function App() {
     { name: "Contact me", href: "#contact" },
   ];
 
-  // 2. Bloquer le scroll quand le menu est ouvert
+  // Bloquer le scroll quand le menu est ouvert
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -23,8 +59,52 @@ function App() {
     }
   }, [isMenuOpen]);
 
+  const toggleObjective = useCallback((id) => {
+    const isClosing = activeObjective === id;
+
+    if (isClosing) {
+      const detailEl = document.querySelector(`.full-width-details[data-id="${id}"]`);
+      if (detailEl) {
+        waapi.animate(detailEl, {
+          opacity: [1, 0],
+          translateY: [0, -10],
+          scale: [1, 0.96],
+          duration: 200,
+          ease: 'inExpo',
+        });
+        setTimeout(() => setActiveObjective(null), 200);
+      } else {
+        setActiveObjective(null);
+      }
+    } else {
+      const cardEl = document.querySelector(`.objective-card[data-id="${id}"]`);
+      if (cardEl) {
+        waapi.animate(cardEl, {
+          scale: [1, 0.96, 1],
+          duration: 450,
+          ease: 'outElastic(1, .6)',
+        });
+      }
+      setActiveObjective(id);
+      requestAnimationFrame(() => {
+        const detailEl = document.querySelector(`.full-width-details[data-id="${id}"]`);
+        if (detailEl) {
+          waapi.animate(detailEl, {
+            opacity: [0, 1],
+            translateY: [-20, 0],
+            scale: [0.95, 1],
+            duration: 450,
+            ease: 'outExpo',
+          });
+        }
+      });
+    }
+  }, [activeObjective]);
+
   return (
-    <div className="App">
+    <>
+      <div className="vanta-bg" ref={vantaBgRef} />
+      <div className="App">
       <header className="App-header">
         <div className={`App-header-container ${isMenuOpen ? 'clicked' : ''}`}>
           <h1>Pierre Untersinger</h1>
@@ -90,87 +170,50 @@ function App() {
             </div>
 
             <div className="skill-grid-brody">
-              <div className="skill-tag">Web</div>
-              <div className="skill-tag">Réseaux</div>
-              <div className="skill-tag">AI</div>
-              <div className="skill-tag">Gestion / Organisation</div>
+                <SkillIcons />
             </div>
+          </div>
+          <div className="animation-card">
+            <NetworkAnimation />
           </div>
         </section>
         
-        {/* SECTION: OBJECTIVES (Texte corrigé et structuré) */}
+        {/* SECTION: OBJECTIVES */}
         <section id="objectives">
           <h2>My objectives</h2>
           <div className="objectives-container">
-            
-            <div className="objective-card">
-              <div className="obj-header">
-                <span className="obj-number">01</span>
-                <h3>Réseaux & Infrastructures</h3>
-              </div>
-              <p>
-                Je suis particulièrement motivé à accroître mes capacités dans le domaine du réseau. 
-                Je souhaite intégrer une structure professionnelle afin de parfaire mes connaissances. 
-                Depuis le début de mes études, je gère mon propre serveur personnel sur lequel je pratique quotidiennement.
-              </p>
-              <ul>
-                <li>Protocoles (TCP/IP, UDP, Telnet, SSH)</li>
-                <li>Outils de supervision (Wireshark, Zabbix)</li>
-                <li>Sécurité et optimisation des performances</li>
-              </ul>
-            </div>
-
-            <div className="objective-card">
-              <div className="obj-header">
-                <span className="obj-number">02</span>
-                <h3>Cloud Computing</h3>
-              </div>
-              <p>
-                Le monde du Cloud m'intéresse vivement et constitue l'un de mes objectifs majeurs. 
-                Convaincu que ce secteur est l'avenir de notre infrastructure, je souhaite 
-                être à la pointe des technologies de déploiement et de gestion à distance.
-              </p>
-              <ul>
-                <li>Maîtrise des plateformes (AWS, Azure, GCP)</li>
-                <li>Automatisation (Terraform, Ansible)</li>
-                <li>Gestion d'infrastructures scalables</li>
-              </ul>
-            </div>
-
-            <div className="objective-card">
-              <div className="obj-header">
-                <span className="obj-number">03</span>
-                <h3>Intelligence Artificielle</h3>
-              </div>
-              <p>
-                Grâce à mon cursus, je manipule des modèles génératifs depuis mes débuts. 
-                C'est un secteur en pleine mutation qui exige des connaissances approfondies, 
-                ce qui me pousse à m'investir davantage dans la compréhension des modèles LLM.
-              </p>
-              <ul>
-                <li>Modèles Open-source (Mistral, Llama, Qwen)</li>
-                <li>Automatisation et analyse de données via l'IA</li>
-                <li>Veille technologique sur le Machine Learning</li>
-              </ul>
-            </div>
-
-            <div className="objective-card">
-              <div className="obj-header">
-                <span className="obj-number">04</span>
-                <h3>Gestion de Projet</h3>
-              </div>
-              <p>
-                Je souhaite me perfectionner dans l'organisation et la gestion de projet. 
-                C'est un pilier souvent sous-estimé, pourtant crucial pour la réussite 
-                d'une solution technique. Mon but est de piloter des projets efficacement de A à Z.
-              </p>
-              <ul>
-                <li>Méthodologies Agiles (Scrum, Kanban)</li>
-                <li>Outils collaboratifs (GitHub, Jira, Trello)</li>
-                <li>Communication d'équipe et respect des délais</li>
-              </ul>
-            </div>
-
+            {[
+              { id: 1, number: "01", title: "Réseaux & Infrastructures",
+                desc: "Je suis particulièrement motivé à accroître mes capacités dans le domaine du réseau. Je souhaite intégrer une structure professionnelle afin de parfaire mes connaissances. Depuis le début de mes études, je gère mon propre serveur personnel sur lequel je pratique quotidiennement.",
+                items: ["Protocoles (TCP/IP, UDP, Telnet, SSH)", "Outils de supervision (Wireshark, Zabbix)", "Sécurité et optimisation des performances"] },
+              { id: 2, number: "02", title: "Cloud Computing",
+                desc: "Le monde du Cloud m'intéresse vivement et constitue l'un de mes objectifs majeurs. Convaincu que ce secteur est l'avenir de notre infrastructure, je souhaite être à la pointe des technologies de déploiement et de gestion à distance.",
+                items: ["Maîtrise des plateformes (AWS, Azure, GCP)", "Automatisation (Terraform, Ansible)", "Gestion d'infrastructures scalables"] },
+              { id: 3, number: "03", title: "Intelligence Artificielle",
+                desc: "Grâce à mon cursus, je manipule des modèles génératifs depuis mes débuts. C'est un secteur en pleine mutation qui exige des connaissances approfondies, ce qui me pousse à m'investir davantage dans la compréhension des modèles LLM.",
+                items: ["Modèles Open-source (Mistral, Llama, Qwen)", "Automatisation et analyse de données via l'IA", "Veille technologique sur le Machine Learning"] },
+              { id: 4, number: "04", title: "Gestion de Projet",
+                desc: "Je souhaite me perfectionner dans l'organisation et la gestion de projet. C'est un pilier souvent sous-estimé, pourtant crucial pour la réussite d'une solution technique. Mon but est de piloter des projets efficacement de A à Z.",
+                items: ["Méthodologies Agiles (Scrum, Kanban)", "Outils collaboratifs (GitHub, Jira, Trello)", "Communication d'équipe et respect des délais"] },
+            ].map(obj => (
+              <React.Fragment key={obj.id}>
+                <div
+                  className={`objective-card ${activeObjective === obj.id ? 'active' : ''}`}
+                  data-id={obj.id}
+                  onClick={() => toggleObjective(obj.id)}
+                >
+                  <div className="obj-header">
+                    <span className="obj-number">{obj.number}</span>
+                    <h3>{obj.title}</h3>
+                  </div>
+                  <p>{obj.desc}</p>
+                  <ul>
+                    {obj.items.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </div>
+                {activeObjective === obj.id && <ObjectiveDetails objId={obj.id} />}
+              </React.Fragment>
+            ))}
           </div>
         </section>
 
@@ -185,6 +228,7 @@ function App() {
         </section>
       </main>
     </div>
+    </>
   );
 }
 
