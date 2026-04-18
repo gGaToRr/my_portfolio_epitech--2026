@@ -1,0 +1,103 @@
+.App-header {
+    width: 310px;
+    flex-shrink: 0;
+}
+
+.App-header-container {
+    position: sticky;
+    top: 20px;
+    margin: 20px;
+    height: calc(100vh - 40px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    padding: 25px;
+    gap: 20px;
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.App-header-container h1 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.link-pc {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+.link-pc a {
+    text-decoration: none;
+}
+
+.link-pc a button {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    text-align: left;
+    background: transparent;
+    color: white;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.link-pc a button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.hamburger-button {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .App-header {
+        width: 100%;
+        height: auto;
+    }
+
+    .App-header-container {
+        height: auto;
+        min-height: 70px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        padding: 10px 20px;
+        margin: 10px;
+        box-shadow: none;
+    }
+
+    .App-header-container h1 {
+        font-size: 22px;
+        margin-bottom: 0;
+    }
+
+    .link-pc {
+        display: none;
+    }
+
+    .hamburger-button {
+        display: block;
+    }
+}
+
+@media (max-width: 480px) {
+    .App-header-container {
+        padding: 8px 15px;
+        margin: 8px;
+    }
+
+    .App-header-container h1 {
+        font-size: 18px;
+    }
+}
