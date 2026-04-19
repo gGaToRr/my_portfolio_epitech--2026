@@ -5,6 +5,7 @@ import Footer from './components/Footer/Footer';
 import WhoIAm from './sections/WhoIAm/WhoIAm';
 import Objectives from './sections/Objectives/Objectives';
 import Experiences from './sections/Experiences/Experiences';
+import Projects from './sections/Projects/Projects';
 import Contact from './sections/Contact/Contact';
 import useVantaBackground from './hooks/useVantaBackground';
 import useBodyScrollLock from './hooks/useBodyScrollLock';
@@ -26,6 +27,7 @@ function App() {
                     <WhoIAm />
                     <Objectives />
                     <Experiences />
+                    <Projects />
                     <Contact />
                     <Footer />
                 </main>
