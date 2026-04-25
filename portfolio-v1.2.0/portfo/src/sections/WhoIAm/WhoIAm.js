@@ -1,4 +1,5 @@
 import SkillIcons from './SkillIcons';
+import profilePhoto from '../../assets/me.jpeg';
 import './WhoIAm.css';
 
 function WhoIAm() {
@@ -13,7 +14,7 @@ function WhoIAm() {
 
                 <div className="profile-carte">
                     <div className="image-profile">
-                        <span>Ma photo</span>
+                        <img src={profilePhoto} alt="Photo de profil de Pierre Untersinger" />
                     </div>
                     <div className="profile-info">
                         <h3>Pierre Untersinger</h3>
@@ -23,9 +24,20 @@ function WhoIAm() {
 
                 <div className="about-texte">
                     <p>
-                        Étudiant depuis septembre 2025, je suis passionné et pleinement engagé
-                        par les métiers du développement et de l'informatique. J'ai déjà eu l'opportunité de réaliser plusieurs projets
-                        informatiques complexes, aussi bien dans le cadre de mon cursus qu'à titre personnel.
+                        Étudiant depuis septembre 2025 au sein de l'école Epitech Marseille, je suis passionné
+                        et pleinement engagé par les métiers du développement et de l'informatique. J'ai déjà
+                        eu l'opportunité de mener plusieurs projets complexes, aussi bien dans le cadre de mon
+                        cursus qu'à titre personnel : application desktop multi-plateforme, serveur auto-hébergé,
+                        outils internes, expérimentations système et réseau.
+                    </p>
+                    <p>
+                        Souhaitant approfondir mes compétences dans les domaines du réseau et de l'infrastructure
+                        Cloud, je vais prochainement effectuer un stage au sein de l'entreprise Liriscom afin de
+                        confronter mes acquis à un environnement professionnel exigeant.
+                    </p>
+                    <p>
+                        Curieux et rigoureux, je suis porté par l'envie d'apprendre, de tester, d'innover,
+                        et de construire des solutions propres, maintenables et durables.
                     </p>
                     <div className="cta-container">
                         <button type="button" className="btn-cta btn-cta--primary">

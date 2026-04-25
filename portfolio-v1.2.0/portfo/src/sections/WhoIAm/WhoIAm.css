@@ -29,18 +29,21 @@
 }
 
 .image-profile {
-    width: 140px;
-    height: 140px;
+    width: 200px;
+    height: 200px;
     background: linear-gradient(135deg, #3d4451, #282c34);
     border-radius: 50%;
     margin: 0 auto 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
+    overflow: hidden;
     border: 4px solid #61dafb;
     box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
-    font-weight: bold;
+}
+
+.image-profile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 .profile-info h3 {
@@ -188,8 +191,8 @@
     }
 
     .image-profile {
-        width: 100px;
-        height: 100px;
+        width: 150px;
+        height: 150px;
     }
 
     .profile-info h3 {
@@ -218,8 +221,8 @@
 
 @media (max-width: 480px) {
     .image-profile {
-        width: 80px;
-        height: 80px;
+        width: 120px;
+        height: 120px;
     }
 
     .profile-info h3 {
