@@ -1,3 +1,47 @@
+/* ===== THEME VARIABLES ===== */
+:root {
+    --transition-theme: background 0.3s ease, color 0.3s ease,
+                        border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0d0d14;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-strong: rgba(0, 0, 0, 0.7);
+    --surface-hover: rgba(255, 255, 255, 0.08);
+    --text: #e2e2e2;
+    --text-strong: #ffffff;
+    --text-muted: rgba(226, 226, 226, 0.65);
+    --text-faint: rgba(226, 226, 226, 0.5);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --accent: #61dafb;
+    --accent-soft: rgba(97, 218, 251, 0.08);
+    --accent-mid: rgba(97, 218, 251, 0.3);
+    --accent-glow: rgba(97, 218, 251, 0.15);
+    --header-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+    --bg: #fafafa;
+    --surface: rgba(0, 0, 0, 0.025);
+    --surface-strong: rgba(255, 255, 255, 0.92);
+    --surface-hover: rgba(0, 0, 0, 0.045);
+    --text: #1a1a1a;
+    --text-strong: #000000;
+    --text-muted: rgba(26, 26, 26, 0.65);
+    --text-faint: rgba(26, 26, 26, 0.5);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.18);
+    --accent: #d2284c;
+    --accent-soft: rgba(210, 40, 76, 0.06);
+    --accent-mid: rgba(210, 40, 76, 0.3);
+    --accent-glow: rgba(210, 40, 76, 0.18);
+    --header-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
 /* Global reset */
 * {
     box-sizing: border-box;
@@ -7,8 +51,10 @@
 
 body {
     margin: 0;
-    color: white;
+    color: var(--text);
     font-family: sans-serif;
+    background: var(--bg);
+    transition: var(--transition-theme);
 }
 
 img {
@@ -19,11 +65,10 @@ img {
 /* Layout */
 .vanta-bg {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     z-index: 0;
+    filter: blur(3px);
+    transform: scale(1.05);
 }
 
 .App {
@@ -32,14 +77,27 @@ img {
     min-height: 100vh;
     position: relative;
     z-index: 1;
+    overflow-x: clip;
 }
 
 .App-Main {
     flex-grow: 1;
+    min-width: 0;
     min-height: 100vh;
-    padding: 20px;
+    padding: 20px 20px 0;
     display: flex;
     flex-direction: column;
+    overflow-x: clip;
+}
+
+.page-loader {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    padding: 80px 20px;
 }
 
 .App-Main section {
@@ -48,9 +106,12 @@ img {
     flex-direction: column;
 }
 
-.App-Main section#experiences,
-.App-Main section#contact {
+.App-Main section#experiences {
     min-height: calc(100vh - 40px);
+}
+
+.App-Main section#contact {
+    margin-bottom: 60px;
 }
 
 @media (max-width: 768px) {

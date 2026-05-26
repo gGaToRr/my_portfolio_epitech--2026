@@ -14,7 +14,14 @@ function WhoIAm() {
 
                 <div className="profile-carte">
                     <div className="image-profile">
-                        <img src={profilePhoto} alt="Photo de profil de Pierre Untersinger" />
+                        <img
+                            src={profilePhoto}
+                            alt="Pierre Untersinger"
+                            decoding="async"
+                            fetchpriority="high"
+                            width="200"
+                            height="200"
+                        />
                     </div>
                     <div className="profile-info">
                         <h3>Pierre Untersinger</h3>

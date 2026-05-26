@@ -1,36 +1,33 @@
-import { useState } from 'react';
-import Header from './components/Header/Header';
-import MobileMenu from './components/MobileMenu/MobileMenu';
-import Footer from './components/Footer/Footer';
-import WhoIAm from './sections/WhoIAm/WhoIAm';
-import Objectives from './sections/Objectives/Objectives';
-import Experiences from './sections/Experiences/Experiences';
-import Projects from './sections/Projects/Projects';
-import Contact from './sections/Contact/Contact';
+import { Suspense, lazy } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Home from './pages/Home/Home';
 import useVantaBackground from './hooks/useVantaBackground';
-import useBodyScrollLock from './hooks/useBodyScrollLock';
+import useTheme from './hooks/useTheme';
 import './App.css';
 
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail/ProjectDetail'));
+
+function PageLoader() {
+    return <div className="page-loader" aria-live="polite">Chargement…</div>;
+}
+
 function App() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const vantaBgRef = useVantaBackground();
-    useBodyScrollLock(isMenuOpen);
+    const [theme, toggleTheme] = useTheme();
+    const vantaBgRef = useVantaBackground(theme);
 
     return (
         <>
             <div className="vanta-bg" ref={vantaBgRef} />
             <div className="App">
-                <Header isMenuOpen={isMenuOpen} onOpenMenu={() => setIsMenuOpen(true)} />
-                <MobileMenu open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
-
-                <main className="App-Main">
-                    <WhoIAm />
-                    <Objectives />
-                    <Experiences />
-                    <Projects />
-                    <Contact />
-                    <Footer />
-                </main>
+                <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                        <Route
+                            path="/"
+                            element={<Home theme={theme} onToggleTheme={toggleTheme} />}
+                        />
+                        <Route path="/projects/:slug" element={<ProjectDetail />} />
+                    </Routes>
+                </Suspense>
             </div>
         </>
     );

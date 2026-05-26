@@ -16,34 +16,39 @@ function Footer() {
                     <a href="#who">Who I am</a>
                     <a href="#objectives">Objectives</a>
                     <a href="#experiences">Experiences</a>
+                    <a href="#projects">Projects</a>
+                    <a href="#epitech-projects">Epitech</a>
                     <a href="#contact">Contact</a>
                 </nav>
 
                 <div className="site-footer__socials">
                     <a
-                        href="https://github.com/"
+                        href="https://github.com/gGaToRr"
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         aria-label="GitHub"
                     >
                         <FaGithub />
                     </a>
                     <a
-                        href="https://linkedin.com/"
+                        href="https://www.linkedin.com/"
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         aria-label="LinkedIn"
                     >
                         <FaLinkedin />
                     </a>
-                    <a href="mailto:contact@example.com" aria-label="Email">
+                    <a
+                        href="mailto:pierre.untersinger2@gmail.com"
+                        aria-label="Email"
+                    >
                         <FaEnvelope />
                     </a>
                 </div>
             </div>
 
             <div className="site-footer__bottom">
-                <span>© {year} Pierre Untersinger. Tous droits réservés.</span>
+                <span>© {year} Pierre Untersinger — Tous droits réservés.</span>
                 <span>Built with React · Vanta.js</span>
             </div>
         </footer>

@@ -13,14 +13,29 @@
     flex-direction: column;
     padding: 25px;
     gap: 20px;
-    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
-    background: rgba(0, 0, 0, 0.7);
+    box-shadow: var(--header-shadow);
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: var(--transition-theme);
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
 }
 
-.App-header-container h1 {
-    font-size: 28px;
+.App-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 20px;
+}
+
+.App-header-top h1 {
+    font-size: 26px;
+    margin: 0;
     text-align: left;
+    color: var(--text-strong);
 }
 
 .link-pc {
@@ -40,16 +55,17 @@
     font-size: 18px;
     text-align: left;
     background: transparent;
-    color: white;
+    color: var(--text);
     border: 1px solid transparent;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .link-pc a button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--accent);
 }
 
 .hamburger-button {
@@ -71,15 +87,21 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-        position: relative;
+        position: sticky;
+        top: 10px;
+        z-index: 50;
         padding: 10px 20px;
         margin: 10px;
-        box-shadow: none;
+        box-shadow: 0 4px 20px var(--accent-glow);
     }
 
-    .App-header-container h1 {
-        font-size: 22px;
+    .App-header-top {
+        flex: 1;
         margin-bottom: 0;
+    }
+
+    .App-header-top h1 {
+        font-size: 22px;
     }
 
     .link-pc {
@@ -97,7 +119,7 @@
         margin: 8px;
     }
 
-    .App-header-container h1 {
+    .App-header-top h1 {
         font-size: 18px;
     }
 }
