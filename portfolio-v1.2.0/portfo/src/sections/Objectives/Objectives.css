@@ -1,33 +1,19 @@
-/* --- ObjectivesStack : carousel de cartes (sans scroll hijack) --- */
-
-.obj-carousel {
+.obj-container {
     position: relative;
     width: 100%;
-    margin-top: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    margin-top: 10px;
 }
 
 .obj-carousel-viewport {
     position: relative;
     width: 100%;
-    height: 34rem;
+    height: 380px;
     overflow: visible;
-    transition: height 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-
-    /* Fond fluide sur les côtés pour montrer les bords arrondis sans clipper */
-    -webkit-mask-image: linear-gradient(to right,
-        transparent 0%,
-        rgba(0, 0, 0, 1) 8%,
-        rgba(0, 0, 0, 1) 92%,
-        transparent 100%);
-    mask-image: linear-gradient(to right,
-        transparent 0%,
-        rgba(0, 0, 0, 1) 8%,
-        rgba(0, 0, 0, 1) 92%,
-        transparent 100%);
-}
-
-.obj-carousel-viewport:has(.obj-card.is-active:hover) {
-    height: 42rem;
+    perspective: 1000px;
 }
 
 .obj-carousel-stage {
@@ -37,191 +23,224 @@
 
 .obj-card {
     position: absolute;
-    top: 2rem;
+    top: 50%;
     left: 50%;
-    width: 44rem;
-    max-width: 88vw;
-    height: 28rem;
-    border-radius: 22px;
-    overflow: hidden;
-    background: var(--bg);
+    width: 460px;
+    max-width: 90vw;
+    height: 340px;
+    border-radius: 20px;
+    background: var(--surface-strong);
     border: 1px solid var(--border);
+    backdrop-filter: blur(16px);
     text-align: left;
     cursor: pointer;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.5s ease,
-                height 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.4s ease,
                 border-color 0.3s ease,
-                background 0.3s ease,
+                filter 0.4s ease,
                 box-shadow 0.3s ease;
-    will-change: transform, opacity, height;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+    will-change: transform, opacity;
+    overflow: hidden;
 }
 
 .obj-card.is-active {
-    border-color: var(--accent-mid);
     cursor: default;
-    box-shadow: 0 26px 60px var(--accent-glow);
-}
-
-.obj-card.is-active:hover {
-    height: 38rem;
-    background: color-mix(in srgb, var(--bg) 94%, var(--accent) 6%);
     border-color: var(--accent);
+    box-shadow: 0 20px 45px var(--accent-glow);
 }
 
-/* --- Contenu --- */
+.obj-card.is-inactive:hover {
+    opacity: 0.8 !important;
+    border-color: var(--border-strong);
+    filter: blur(0px) !important;
+}
 
 .obj-card-content {
-    position: relative;
-    z-index: 2;
+    height: 100%;
+    padding: 26px 28px;
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
-    height: 100%;
-    padding: 2.2rem 2.4rem;
+    justify-content: space-between;
+    box-sizing: border-box;
+    gap: 12px;
 }
 
-/* --- Head, titre, desc --- */
-
-.obj-card-head {
+.obj-card-top {
     display: flex;
     align-items: center;
-    gap: 0.9rem;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.obj-card-icon-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-mid);
+    color: var(--accent);
+}
+
+.obj-domain-icon {
+    font-size: 1rem;
 }
 
 .obj-card-num {
+    font-size: 0.85rem;
+    font-weight: 800;
     font-family: monospace;
-    font-size: 12px;
-    color: var(--accent);
     letter-spacing: 0.05em;
 }
 
 .obj-card-preview {
-    font-size: 0.8rem;
-    color: var(--text-faint);
-    line-height: 1.4;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .obj-card-title {
-    font-size: 1.6rem;
-    font-weight: 600;
+    font-size: 1.45rem;
+    font-weight: 700;
     color: var(--text-strong);
     margin: 0;
-    line-height: 1.2;
+    line-height: 1.25;
 }
 
 .obj-card-desc {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    line-height: 1.65;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text);
     margin: 0;
     flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.obj-card-footer {
+    margin-top: auto;
 }
 
 .obj-card-items {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: auto;
 }
 
 .obj-card-item {
-    font-size: 11px;
-    padding: 5px 10px;
+    font-size: 0.72rem;
+    font-family: monospace;
+    padding: 4px 9px;
     border-radius: 6px;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-muted);
-    font-family: monospace;
-    background: var(--surface-strong);
-    backdrop-filter: blur(4px);
 }
 
-/* --- Actions --- */
+.is-active .obj-card-item {
+    border-color: var(--accent-soft);
+    color: var(--text-strong);
+}
 
-.obj-carousel-actions {
+/* Controls & Pagination */
+.obj-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 5;
+}
+
+.obj-nav-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    color: var(--text);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1.2rem;
-    margin-top: 1.5rem;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.obj-carousel:has(.obj-card.is-active:hover) .obj-carousel-actions {
-    opacity: 0;
-    visibility: hidden;
-}
-
-.obj-carousel-btn {
-    background: transparent;
-    border: solid 2px var(--accent);
-    color: var(--accent);
-    border-radius: 99px;
-    padding: 9px 22px;
-    font-weight: 600;
-    font-size: 0.9rem;
     cursor: pointer;
-    font-family: inherit;
-    transition: background 0.2s ease, color 0.2s ease;
+    font-size: 0.95rem;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.obj-carousel-btn:hover {
+.obj-nav-btn:hover {
+    transform: scale(1.08);
     background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 6px 18px var(--accent-glow);
+}
+
+.obj-dots-container {
+    display: flex;
+    gap: 8px;
+    background: var(--surface);
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+}
+
+.obj-dot-btn {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.obj-dot-label {
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.obj-dot-btn:hover .obj-dot-label {
+    color: var(--text-strong);
+}
+
+.obj-dot-btn.is-active {
+    background: var(--accent);
+}
+
+.obj-dot-btn.is-active .obj-dot-label {
     color: var(--bg);
 }
 
-.obj-carousel-dots {
-    display: flex;
-    gap: 8px;
-}
-
-.obj-carousel-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: none;
-    padding: 0;
-    background: var(--border-strong);
-    cursor: pointer;
-    transition: background 0.25s ease, transform 0.25s ease;
-}
-
-.obj-carousel-dot:hover {
-    background: var(--accent-mid);
-}
-
-.obj-carousel-dot.is-active {
-    background: var(--accent);
-    transform: scale(1.3);
-}
-
-/* --- Responsive --- */
-
-@media (max-width: 720px) {
+@media (max-width: 600px) {
     .obj-carousel-viewport {
-        height: 30rem;
-    }
-
-    .obj-carousel-viewport:has(.obj-card.is-active:hover) {
-        height: 38rem;
+        height: 390px;
     }
 
     .obj-card {
-        width: 22rem;
-        height: 26rem;
+        width: 320px;
+        height: 360px;
     }
 
     .obj-card-content {
-        padding: 1.5rem 1.6rem;
-    }
-
-    .obj-card.is-active:hover {
-        height: 34rem;
+        padding: 20px 18px;
     }
 
     .obj-card-title {
-        font-size: 1.25rem;
+        font-size: 1.2rem;
     }
 
+    .obj-card-desc {
+        font-size: 0.86rem;
+        -webkit-line-clamp: 5;
+    }
 }

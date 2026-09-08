@@ -1,6 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { FaChevronLeft, FaChevronRight, FaNetworkWired, FaCloud, FaBrain, FaTasks } from 'react-icons/fa';
 import objectives from '../../data/objectives';
 import './Objectives.css';
+
+const ICON_MAP = {
+    network: FaNetworkWired,
+    cloud: FaCloud,
+    ai: FaBrain,
+    project: FaTasks,
+};
 
 function Objectives() {
     const [active, setActive] = useState(0);
@@ -9,10 +17,25 @@ function Objectives() {
     const next = useCallback(() => setActive((i) => (i + 1) % count), [count]);
     const prev = useCallback(() => setActive((i) => (i - 1 + count) % count), [count]);
 
+    // Navigation au clavier (flèches gauche / droite)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowLeft') prev();
+            if (e.key === 'ArrowRight') next();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [next, prev]);
+
     return (
         <section id="objectives">
-            <h2>My objectives</h2>
-            <div className="obj-carousel">
+            <div className="section-head">
+                <span className="section-subtitle">Vision & Projections</span>
+                <h2 className="section-title">My objectives</h2>
+            </div>
+
+            <div className="obj-container">
+                {/* Carousel 3D de cartes */}
                 <div className="obj-carousel-viewport">
                     <div className="obj-carousel-stage">
                         {objectives.map((obj, i) => {
@@ -20,35 +43,46 @@ function Objectives() {
                             if (diff > count / 2) diff -= count;
                             if (diff < -count / 2) diff += count;
                             const abs = Math.abs(diff);
-                            const visible = abs <= 1;
+                            const isVisible = abs <= 1;
+                            const isActive = diff === 0;
+                            const IconComponent = ICON_MAP[obj.iconKey] || FaNetworkWired;
 
                             const style = {
-                                transform: `translate(-50%, 0) translateX(${diff * 56}%) scale(${1 - abs * 0.12})`,
-                                opacity: visible ? 1 - abs * 0.4 : 0,
+                                transform: `translate(-50%, -50%) translateX(${diff * 60}%) scale(${1 - abs * 0.12})`,
+                                opacity: isVisible ? (isActive ? 1 : 0.45) : 0,
                                 zIndex: 10 - abs,
-                                pointerEvents: visible ? 'auto' : 'none',
-                                visibility: visible ? 'visible' : 'hidden',
+                                pointerEvents: isVisible ? 'auto' : 'none',
+                                filter: isActive ? 'none' : 'blur(1px)',
                             };
 
                             return (
                                 <article
                                     key={obj.id}
-                                    className={`obj-card ${diff === 0 ? 'is-active' : ''}`}
+                                    className={`obj-card ${isActive ? 'is-active' : 'is-inactive'}`}
                                     style={style}
-                                    aria-hidden={diff !== 0}
-                                    onClick={() => diff !== 0 && setActive(i)}
+                                    aria-hidden={!isActive}
+                                    onClick={() => !isActive && setActive(i)}
                                 >
                                     <div className="obj-card-content">
-                                        <div className="obj-card-head">
-                                            <span className="obj-card-num">{obj.number}</span>
+                                        <div className="obj-card-top">
+                                            <div className="obj-card-icon-pill">
+                                                <IconComponent className="obj-domain-icon" />
+                                                <span className="obj-card-num">{obj.number}</span>
+                                            </div>
                                             <span className="obj-card-preview">{obj.preview}</span>
                                         </div>
+
                                         <h3 className="obj-card-title">{obj.title}</h3>
                                         <p className="obj-card-desc">{obj.desc}</p>
-                                        <div className="obj-card-items">
-                                            {obj.items.map((item, j) => (
-                                                <span key={j} className="obj-card-item">{item}</span>
-                                            ))}
+
+                                        <div className="obj-card-footer">
+                                            <div className="obj-card-items">
+                                                {obj.items.map((item, j) => (
+                                                    <span key={j} className="obj-card-item">
+                                                        {item}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 </article>
@@ -57,23 +91,40 @@ function Objectives() {
                     </div>
                 </div>
 
-                <div className="obj-carousel-actions">
-                    <button type="button" className="obj-carousel-btn" onClick={prev} aria-label="Objectif précédent">
-                        Prev
+                {/* Barre de contrôles et pagination */}
+                <div className="obj-controls">
+                    <button
+                        type="button"
+                        className="obj-nav-btn"
+                        onClick={prev}
+                        aria-label="Objectif précédent"
+                        title="Précédent (Flèche gauche)"
+                    >
+                        <FaChevronLeft />
                     </button>
-                    <div className="obj-carousel-dots">
-                        {objectives.map((_, i) => (
+
+                    <div className="obj-dots-container">
+                        {objectives.map((obj, i) => (
                             <button
-                                key={i}
+                                key={obj.id}
                                 type="button"
-                                className={`obj-carousel-dot ${i === active ? 'is-active' : ''}`}
+                                className={`obj-dot-btn ${i === active ? 'is-active' : ''}`}
                                 onClick={() => setActive(i)}
-                                aria-label={`Aller à l'objectif ${i + 1}`}
-                            />
+                                aria-label={`Aller à l'objectif ${i + 1} : ${obj.title}`}
+                            >
+                                <span className="obj-dot-label">{obj.number}</span>
+                            </button>
                         ))}
                     </div>
-                    <button type="button" className="obj-carousel-btn" onClick={next} aria-label="Objectif suivant">
-                        Next
+
+                    <button
+                        type="button"
+                        className="obj-nav-btn"
+                        onClick={next}
+                        aria-label="Objectif suivant"
+                        title="Suivant (Flèche droite)"
+                    >
+                        <FaChevronRight />
                     </button>
                 </div>
             </div>

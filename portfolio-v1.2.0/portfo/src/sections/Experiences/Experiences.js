@@ -1,48 +1,78 @@
+import { FaGraduationCap, FaBriefcase, FaMapMarkerAlt, FaCalendarAlt, FaTrophy } from 'react-icons/fa';
 import { formations, jobExperiences } from '../../data/experiences';
 import useInView from '../../hooks/useInView';
 import './Experiences.css';
 
-function RevealCard({ xp, index }) {
-    const [ref, inView] = useInView({ threshold: 0.25 });
+function FormationCard({ xp, index }) {
+    const [ref, inView] = useInView({ threshold: 0.2 });
+
     return (
         <article
             ref={ref}
-            className={`exp-card${inView ? ' is-visible' : ''}`}
+            className={`exp-formation-card ${inView ? 'is-visible' : ''}`}
             style={{ '--delay': `${index * 120}ms` }}
         >
-            <div className="exp-card__head">
-                <span className="exp-card__company">{xp.company}</span>
+            <div className="formation-card__header">
+                <div className="formation-icon-wrap">
+                    <FaGraduationCap className="formation-icon" />
+                </div>
+                <div className="formation-school-meta">
+                    <span className="formation-company">{xp.company}</span>
+                    <h4 className="formation-title">{xp.title}</h4>
+                </div>
             </div>
-            <h4 className="exp-card__title">{xp.title}</h4>
-            <p className="exp-card__summary">{xp.summary}</p>
-            <ul className="exp-card__tags">
+
+            <p className="formation-summary">{xp.summary}</p>
+
+            <div className="formation-tags">
                 {xp.tags.map((tag) => (
-                    <li key={tag}>{tag}</li>
+                    <span key={tag} className="formation-tag">
+                        {tag}
+                    </span>
                 ))}
-            </ul>
+            </div>
         </article>
     );
 }
 
-function RevealTimelineItem({ job, index }) {
-    const [ref, inView] = useInView({ threshold: 0.3 });
+function TimelineItem({ job, index }) {
+    const [ref, inView] = useInView({ threshold: 0.25 });
+    const isAwarded = job.detail && job.detail.toLowerCase().includes('employé du mois');
+
     return (
         <li
             ref={ref}
-            className={`exp-timeline__item${inView ? ' is-visible' : ''}`}
-            style={{ '--delay': `${index * 100}ms` }}
+            className={`timeline-item ${inView ? 'is-visible' : ''}`}
+            style={{ '--delay': `${index * 90}ms` }}
         >
-            <div className="exp-timeline__dot" aria-hidden="true" />
-            <div className="exp-timeline__content">
-                <div className="exp-timeline__meta">
-                    <span className="exp-timeline__period">{job.period}</span>
-                    <span className="exp-timeline__contract">{job.contract}</span>
+            <div className="timeline-node">
+                <div className="timeline-dot" />
+            </div>
+
+            <div className="timeline-card">
+                <div className="timeline-header">
+                    <div className="timeline-meta-row">
+                        <span className="timeline-period">
+                            <FaCalendarAlt className="timeline-meta-icon" /> {job.period}
+                        </span>
+                        <span className="timeline-contract-badge">{job.contract}</span>
+                    </div>
+                    <h4 className="timeline-role">{job.role}</h4>
+                    <div className="timeline-company-row">
+                        <span className="timeline-company">{job.company}</span>
+                        <span className="timeline-location">
+                            <FaMapMarkerAlt /> {job.place}
+                        </span>
+                    </div>
                 </div>
-                <h4 className="exp-timeline__role">{job.role}</h4>
-                <p className="exp-timeline__company">
-                    {job.company} — <span>{job.place}</span>
-                </p>
-                <p className="exp-timeline__detail">{job.detail}</p>
+
+                <p className="timeline-detail">{job.detail}</p>
+
+                {isAwarded && (
+                    <div className="timeline-highlight-badge">
+                        <FaTrophy className="trophy-icon" /> 3x Employé du mois
+                    </div>
+                )}
             </div>
         </li>
     );
@@ -51,22 +81,33 @@ function RevealTimelineItem({ job, index }) {
 function Experiences() {
     return (
         <section id="experiences">
-            <h2>My experiences</h2>
+            <div className="section-head">
+                <span className="section-subtitle">Parcours & Formations</span>
+                <h2 className="section-title">My experiences</h2>
+            </div>
 
-            <div className="exp-block">
-                <h3 className="exp-block__title">Formations</h3>
-                <div className="exp-grid">
+            {/* 1. Formations & Diplômes */}
+            <div className="exp-subsection">
+                <div className="subsection-title-row">
+                    <FaGraduationCap className="subsection-icon" />
+                    <h3 className="subsection-title">Formations & Certifications</h3>
+                </div>
+                <div className="formations-grid">
                     {formations.map((xp, i) => (
-                        <RevealCard key={xp.id} xp={xp} index={i} />
+                        <FormationCard key={xp.id} xp={xp} index={i} />
                     ))}
                 </div>
             </div>
 
-            <div className="exp-block">
-                <h3 className="exp-block__title">Expériences professionnelles</h3>
-                <ol className="exp-timeline">
+            {/* 2. Expériences Professionnelles */}
+            <div className="exp-subsection">
+                <div className="subsection-title-row">
+                    <FaBriefcase className="subsection-icon" />
+                    <h3 className="subsection-title">Expériences Professionnelles</h3>
+                </div>
+                <ol className="exp-timeline-list">
                     {jobExperiences.map((job, i) => (
-                        <RevealTimelineItem key={job.id} job={job} index={i} />
+                        <TimelineItem key={job.id} job={job} index={i} />
                     ))}
                 </ol>
             </div>
