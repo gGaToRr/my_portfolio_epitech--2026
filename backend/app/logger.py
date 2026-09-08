@@ -1,5 +1,6 @@
 import sys
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from app.config import settings
@@ -11,16 +12,17 @@ COLOR_RESET = "\033[0m"
 class PortfolioLogFormatter(logging.Formatter):
     """
     Formatte strictement chaque ligne de log selon la spécification :
-    [NOM_DE_FICHIER](FONCTIONS)-----Détail de l'erreur ou du log
+    [YYYY-MM-DD HH:MM:SS][NOM_DE_FICHIER](FONCTIONS)-----Détail de l'erreur ou du log
     Avec coloration Rouge pour les erreurs/warnings et Verte pour les succès/actions/infos.
     """
-    def __init__(self, use_color: bool = True):
-        super().__init__()
+    def __init__(self, use_color: bool = True, datefmt: str = "%Y-%m-%d %H:%M:%S"):
+        super().__init__(datefmt=datefmt)
         self.use_color = use_color
 
     def format(self, record: logging.LogRecord) -> str:
         filename = getattr(record, "custom_filename", None) or getattr(record, "filename", "unknown.py")
         func_name = getattr(record, "custom_func", None) or getattr(record, "funcName", "unknown")
+        timestamp = self.formatTime(record, self.datefmt)
         
         is_error = getattr(record, "is_error", False) or record.levelno >= logging.WARNING
 
@@ -32,7 +34,7 @@ class PortfolioLogFormatter(logging.Formatter):
             reset = ""
 
         detail = record.getMessage()
-        return f"{color}[{filename}]({func_name})-----{detail}{reset}"
+        return f"{color}[{timestamp}][{filename}]({func_name})-----{detail}{reset}"
 
 
 def setup_logger(
@@ -68,23 +70,26 @@ def setup_logger(
 
 logger = setup_logger()
 
+def _get_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 def log_success(filename: str, func_name: str, message: str) -> str:
     """Enregistre un log de succès/action utilisateur (Couleur Verte)."""
     extra = {"custom_filename": filename, "custom_func": func_name, "is_error": False}
     logger.info(message, extra=extra)
-    return f"[{filename}]({func_name})-----{message}"
+    return f"[{_get_timestamp()}][{filename}]({func_name})-----{message}"
 
 def log_error(filename: str, func_name: str, message: str) -> str:
     """Enregistre un log d'erreur/exception (Couleur Rouge)."""
     extra = {"custom_filename": filename, "custom_func": func_name, "is_error": True}
     logger.error(message, extra=extra)
-    return f"[{filename}]({func_name})-----{message}"
+    return f"[{_get_timestamp()}][{filename}]({func_name})-----{message}"
 
 def log_warning(filename: str, func_name: str, message: str) -> str:
     """Enregistre un avertissement/action suspecte (Couleur Rouge)."""
     extra = {"custom_filename": filename, "custom_func": func_name, "is_error": True}
     logger.warning(message, extra=extra)
-    return f"[{filename}]({func_name})-----{message}"
+    return f"[{_get_timestamp()}][{filename}]({func_name})-----{message}"
 
 def log_interaction(filename: str, func_name: str, message: str, is_error: bool = False) -> str:
     """Enregistre une interaction utilisateur sur le site (Vert ou Rouge)."""

@@ -1,3 +1,4 @@
+import re
 import logging
 import tempfile
 import os
@@ -14,6 +15,8 @@ from app.logger import (
     COLOR_RESET,
 )
 
+TIMESTAMP_REGEX = r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]"
+
 def test_formatter_green_for_info():
     formatter = PortfolioLogFormatter(use_color=True)
     record = logging.LogRecord(
@@ -29,7 +32,7 @@ def test_formatter_green_for_info():
     formatted = formatter.format(record)
     assert formatted.startswith(COLOR_GREEN)
     assert formatted.endswith(COLOR_RESET)
-    assert "[test_file.py](test_function)-----Opération réussie" in formatted
+    assert re.search(TIMESTAMP_REGEX + r"\[test_file\.py\]\(test_function\)-----Opération réussie", formatted)
 
 def test_formatter_red_for_error():
     formatter = PortfolioLogFormatter(use_color=True)
@@ -46,7 +49,7 @@ def test_formatter_red_for_error():
     formatted = formatter.format(record)
     assert formatted.startswith(COLOR_RED)
     assert formatted.endswith(COLOR_RESET)
-    assert "[auth.py](login_admin)-----Mot de passe incorrect" in formatted
+    assert re.search(TIMESTAMP_REGEX + r"\[auth\.py\]\(login_admin\)-----Mot de passe incorrect", formatted)
 
 def test_formatter_without_color():
     formatter = PortfolioLogFormatter(use_color=False)
@@ -61,8 +64,8 @@ def test_formatter_without_color():
         func="list_projects"
     )
     formatted = formatter.format(record)
-    assert formatted == "[projects.py](list_projects)-----Liste récupérée"
     assert COLOR_GREEN not in formatted
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[projects\.py\]\(list_projects\)-----Liste récupérée$", formatted)
 
 def test_formatter_custom_attributes():
     formatter = PortfolioLogFormatter(use_color=True)
@@ -81,7 +84,7 @@ def test_formatter_custom_attributes():
     record.is_error = False
     
     formatted = formatter.format(record)
-    assert "[Projects.js](onClick)-----Action client" in formatted
+    assert re.search(TIMESTAMP_REGEX + r"\[Projects\.js\]\(onClick\)-----Action client", formatted)
 
 def test_setup_logger_writes_to_log_file():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -97,23 +100,23 @@ def test_setup_logger_writes_to_log_file():
         
         assert log_file.exists()
         content = log_file.read_text(encoding="utf-8")
-        assert "[main.py](root)-----Test écriture fichier" in content
+        assert re.search(TIMESTAMP_REGEX + r"\[main\.py\]\(root\)-----Test écriture fichier", content)
 
 def test_helper_log_success():
     res = log_success("test.py", "func_success", "Tout est OK")
-    assert res == "[test.py](func_success)-----Tout est OK"
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[test\.py\]\(func_success\)-----Tout est OK$", res)
 
 def test_helper_log_error():
     res = log_error("test.py", "func_error", "Échec critique")
-    assert res == "[test.py](func_error)-----Échec critique"
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[test\.py\]\(func_error\)-----Échec critique$", res)
 
 def test_helper_log_warning():
     res = log_warning("test.py", "func_warn", "Attention danger")
-    assert res == "[test.py](func_warn)-----Attention danger"
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[test\.py\]\(func_warn\)-----Attention danger$", res)
 
 def test_helper_log_interaction():
     res_ok = log_interaction("ThemeToggle.js", "onToggle", "Mode sombre activé", is_error=False)
-    assert res_ok == "[ThemeToggle.js](onToggle)-----Mode sombre activé"
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[ThemeToggle\.js\]\(onToggle\)-----Mode sombre activé$", res_ok)
     
     res_err = log_interaction("Contact.js", "onSubmit", "Échec envoi", is_error=True)
-    assert res_err == "[Contact.js](onSubmit)-----Échec envoi"
+    assert re.search(r"^" + TIMESTAMP_REGEX + r"\[Contact\.js\]\(onSubmit\)-----Échec envoi$", res_err)
