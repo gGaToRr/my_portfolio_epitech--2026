@@ -5,6 +5,7 @@ from email.mime.text import MIMEText
 from fastapi import APIRouter, HTTPException, Request, status
 from app.config import settings
 from app.schemas import ContactRequest
+from app.logger import log_success, log_error, log_warning
 
 router = APIRouter(tags=["Contact"])
 
@@ -21,6 +22,7 @@ def is_rate_limited(ip: str) -> bool:
         return False
     
     if record["count"] >= RATE_LIMIT_MAX:
+        log_warning("contact.py", "is_rate_limited", f"Limite d'envoi de messages atteinte pour l'IP {ip}")
         return True
     
     record["count"] += 1
@@ -34,6 +36,7 @@ def healthcheck():
         settings.SMTP_PASS and
         "ton_mot_de_passe" not in settings.SMTP_PASS
     )
+    log_success("contact.py", "healthcheck", f"Healthcheck exécuté (SMTP Configuré: {is_smtp_ready})")
     return {
         "status": "ok",
         "smtpConfigured": is_smtp_ready,
@@ -48,6 +51,7 @@ def send_contact_message(payload: ContactRequest, request: Request):
         client_ip = client_ip.split(",")[0].strip()
 
     if is_rate_limited(client_ip):
+        log_error("contact.py", "send_contact_message", f"Rejet du message - Rate limit actif pour IP {client_ip}")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Trop de requêtes. Veuillez patienter quelques minutes avant de réécrire."
@@ -55,6 +59,7 @@ def send_contact_message(payload: ContactRequest, request: Request):
 
     # Protection bot honeypot
     if payload.botcheck:
+        log_warning("contact.py", "send_contact_message", f"Bot spam honeypot intercepté (IP: {client_ip})")
         return {"success": True, "message": "Message envoyé."}
 
     name = payload.name.strip()[:80]
@@ -63,6 +68,7 @@ def send_contact_message(payload: ContactRequest, request: Request):
     msg = payload.message.strip()[:4000]
 
     if not name or not email or not msg:
+        log_error("contact.py", "send_contact_message", f"Rejet du message - Validation échouée (champs requis vides, IP: {client_ip})")
         raise HTTPException(status_code=400, detail="Tous les champs requis doivent être remplis.")
 
     is_smtp_ready = bool(
@@ -104,13 +110,11 @@ def send_contact_message(payload: ContactRequest, request: Request):
             server.login(settings.SMTP_USER, settings.SMTP_PASS)
             server.send_message(mime_msg)
             server.quit()
-            print(f"[SMTP Python] Email envoyé avec succès pour {name} ({email})")
+            log_success("contact.py", "send_contact_message", f"Email envoyé avec succès via SMTP de '{name}' <{email}>")
         except Exception as e:
-            print(f"[SMTP Python Error] {e}")
+            log_error("contact.py", "send_contact_message", f"Erreur critique lors de l'envoi SMTP: {str(e)}")
             raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email.")
     else:
-        print("[SMTP Python LOCAL] Mode local simulé — Message reçu :")
-        print(f"   De : {name} <{email}> (Tél: {phone})")
-        print(f"   Message : {msg}")
+        log_success("contact.py", "send_contact_message", f"Message local reçu avec succès de '{name}' <{email}> (Tél: {phone})")
 
     return {"success": True, "message": "Votre message a bien été envoyé !"}

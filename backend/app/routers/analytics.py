@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import PageView, AnalyticsEvent, AdminUser
 from app.schemas import PageViewCollect, EventCollect, AnalyticsStatsSummary
 from app.auth import get_current_admin
+from app.logger import log_success, log_error, log_warning, log_interaction
 
 router = APIRouter(tags=["Analytics"])
 
@@ -79,6 +80,7 @@ def collect_pageview(
     ua_info = parse_user_agent(user_agent or "")
     # Exclure les bots des statistiques
     if ua_info["device"] == "bot":
+        log_warning("analytics.py", "collect_pageview", f"Bot/Crawler détecté et ignoré : UA='{user_agent}' (IP: {client_ip})")
         return
 
     v_hash = get_visitor_hash(client_ip, user_agent or "")
@@ -101,6 +103,7 @@ def collect_pageview(
     )
     db.add(view)
     db.commit()
+    log_success("analytics.py", "collect_pageview", f"Page vue enregistrée sur '{view.path}' (Appareil: {ua_info['device']}, OS: {ua_info['os']}, Navigateur: {ua_info['browser']})")
     return None
 
 @router.post("/api/analytics/event", status_code=204)
@@ -116,15 +119,27 @@ def collect_event(
 
     v_hash = get_visitor_hash(client_ip, user_agent or "")
 
+    extra = payload.extra_data or {}
+    source_file = extra.get("source_file", "App.js")
+    source_func = extra.get("source_func", payload.event_name)
+
     event = AnalyticsEvent(
         event_name=payload.event_name[:100],
         target=payload.target[:250] if payload.target else None,
         path=payload.path[:250] if payload.path else None,
         visitor_hash=v_hash,
-        extra_data=payload.extra_data or {},
+        extra_data=extra,
     )
     db.add(event)
     db.commit()
+
+    detail = f"Action interactive : '{payload.event_name}'"
+    if payload.target:
+        detail += f" sur '{payload.target}'"
+    if payload.path:
+        detail += f" (Page: {payload.path})"
+
+    log_interaction(source_file, source_func, detail)
     return None
 
 # =========================================================================
@@ -135,11 +150,12 @@ def collect_event(
 def get_analytics_stats(
     days: int = 30,
     db: Session = Depends(get_db),
-    _: AdminUser = Depends(get_current_admin)
+    admin: AdminUser = Depends(get_current_admin)
 ):
     now = datetime.now(timezone.utc)
     start_date = now - timedelta(days=days)
     today_start = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    log_success("analytics.py", "get_analytics_stats", f"Consultation des statistiques Analytics ({days} jours) par '{admin.username}'")
 
     # 1. Totaux
     total_views = db.query(func.count(PageView.id)).scalar() or 0

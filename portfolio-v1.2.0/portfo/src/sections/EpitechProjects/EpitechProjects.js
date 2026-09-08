@@ -77,7 +77,7 @@ function EpitechProjects() {
                         <a
                             href={buildAccessRequestUrl(p.name, t)}
                             className="ep-card__cta"
-                            onClick={() => trackEvent('request_epitech_project_access', p.name)}
+                            onClick={() => trackEvent('request_epitech_project_access', p.name, { source_file: 'EpitechProjects.js', source_func: 'onClick' })}
                         >
                             <span>{t.epitechProjects.cta}</span>
                             <span className="ep-card__cta-arrow">→</span>

@@ -7,6 +7,7 @@ from app.models import AdminUser
 from app.schemas import LoginRequest, Token
 from app.auth import verify_password, create_access_token, get_current_admin
 from app.config import settings
+from app.logger import log_success, log_error, log_warning
 
 router = APIRouter(prefix="/api/admin", tags=["Admin Auth"])
 
@@ -24,6 +25,7 @@ def check_login_rate_limit(client_ip: str):
             login_attempts.pop(client_ip, None)
         elif count >= LOGIN_MAX_ATTEMPTS:
             remaining = int(LOGIN_WINDOW_SECONDS - (now - first_time))
+            log_warning("auth.py", "check_login_rate_limit", f"Brute force bloqué pour IP {client_ip} ({count} tentatives)")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Trop de tentatives de connexion échouées. Réessayez dans {remaining} secondes."
@@ -36,6 +38,7 @@ def record_failed_login(client_ip: str):
         login_attempts[client_ip] = (now, 1)
     else:
         login_attempts[client_ip] = (record[0], record[1] + 1)
+    log_warning("auth.py", "record_failed_login", f"Tentative échouée enregistrée pour IP {client_ip} (Total: {login_attempts[client_ip][1]})")
 
 def record_successful_login(client_ip: str):
     login_attempts.pop(client_ip, None)
@@ -60,9 +63,11 @@ def login_admin(payload: LoginRequest, request: Request, db: Session = Depends(g
         db.add(user)
         db.commit()
         db.refresh(user)
+        log_success("auth.py", "login_admin", f"Compte administrateur '{settings.ADMIN_USERNAME}' initialisé avec succès")
 
     if not user or not verify_password(payload.password, user.hashed_password):
         record_failed_login(client_ip)
+        log_error("auth.py", "login_admin", f"Échec d'authentification pour '{payload.username}' (IP: {client_ip})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants incorrects."
@@ -70,6 +75,7 @@ def login_admin(payload: LoginRequest, request: Request, db: Session = Depends(g
 
     record_successful_login(client_ip)
     access_token = create_access_token(data={"sub": user.username})
+    log_success("auth.py", "login_admin", f"Connexion réussie pour l'administrateur '{user.username}' (IP: {client_ip})")
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -78,6 +84,7 @@ def login_admin(payload: LoginRequest, request: Request, db: Session = Depends(g
 
 @router.get("/me")
 def get_me(current_admin: AdminUser = Depends(get_current_admin)):
+    log_success("auth.py", "get_me", f"Session admin validée pour '{current_admin.username}'")
     return {
         "status": "ok",
         "username": current_admin.username,

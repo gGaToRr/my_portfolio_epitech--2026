@@ -44,7 +44,7 @@ function Projects() {
                         <Link
                             to={`/projects/${p.slug}`}
                             className="project-card"
-                            onClick={() => trackEvent('click_project_card', p.slug)}
+                            onClick={() => trackEvent('click_project_card', p.slug, { source_file: 'Projects.js', source_func: 'onClick' })}
                         >
                             <h3 className="project-card__title">{p.title}</h3>
                             <p className="project-card__tagline">{p.tagline}</p>

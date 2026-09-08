@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import AdminUser
+from app.logger import log_error, log_success
 
 security = HTTPBearer(auto_error=False)
 
@@ -32,7 +33,8 @@ def verify_password(plain_password: str, stored_hash: str) -> bool:
         salt, hashed = stored_hash.split('$', 1)
         test_hash = hash_password(plain_password, salt)
         return secrets.compare_digest(test_hash, stored_hash)
-    except Exception:
+    except Exception as e:
+        log_error("auth.py", "verify_password", f"Erreur lors de la vérification du mot de passe: {str(e)}")
         return False
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -52,6 +54,7 @@ def get_current_admin(
 ) -> AdminUser:
     """Dépendance FastAPI pour protéger les routes Admin."""
     if not credentials:
+        log_error("auth.py", "get_current_admin", "Accès refusé (401) : Token d'authentification Bearer manquant")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token d'authentification manquant",
@@ -62,12 +65,14 @@ def get_current_admin(
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
+            log_error("auth.py", "get_current_admin", "Accès refusé (401) : Payload token JWT sans 'sub'")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token invalide",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except JWTError:
+    except JWTError as e:
+        log_error("auth.py", "get_current_admin", f"Accès refusé (401) : Token JWT invalide ou expiré ({str(e)})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalide ou expiré",
@@ -76,6 +81,7 @@ def get_current_admin(
     
     user = db.query(AdminUser).filter(AdminUser.username == username).first()
     if user is None:
+        log_error("auth.py", "get_current_admin", f"Accès refusé (401) : Utilisateur '{username}' inexistant dans la base")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Utilisateur non trouvé",

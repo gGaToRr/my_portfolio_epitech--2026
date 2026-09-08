@@ -1,17 +1,20 @@
+import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import engine, Base
 from app.seed import seed_db
 from app.routers import auth, projects, analytics, contact
+from app.logger import log_success, log_error
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Démarrage : Création des tables SQLite et peuplement initial
     Base.metadata.create_all(bind=engine)
     seed_db()
+    log_success("main.py", "lifespan", f"FastAPI Portfolio Backend initialisé sur le port {settings.API_PORT} (Doc: /docs)")
     print("🚀 FastAPI Portfolio Backend prêt !")
     print(f"   Documentation Swagger UI : http://localhost:{settings.API_PORT}/docs")
     yield
@@ -25,9 +28,37 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+# HTTP Request Interaction Logging Middleware
+@app.middleware("http")
+async def log_http_requests(request: Request, call_next):
+    start_time = time.time()
+    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    method = request.method
+    path = request.url.path
+
+    try:
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000
+        status_code = response.status_code
+
+        msg = f"{method} {path} - Statut {status_code} ({duration_ms:.2f}ms) - IP: {client_ip}"
+        if status_code >= 400:
+            log_error("main.py", "http_middleware", msg)
+        else:
+            log_success("main.py", "http_middleware", msg)
+
+        return response
+    except Exception as exc:
+        duration_ms = (time.time() - start_time) * 1000
+        log_error("main.py", "http_middleware", f"{method} {path} - Exception 500: {str(exc)} ({duration_ms:.2f}ms) - IP: {client_ip}")
+        raise exc
+
 # Security Headers Middleware
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -65,6 +96,7 @@ app.include_router(contact.router)
 
 @app.get("/")
 def root():
+    log_success("main.py", "root", "Interrogation du endpoint racine / (Health check)")
     return {
         "app": "Pierre Portfolio API",
         "docs": "/docs",

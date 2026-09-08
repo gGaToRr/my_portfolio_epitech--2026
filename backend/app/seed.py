@@ -4,6 +4,7 @@ from app.database import engine, Base, SessionLocal
 from app.models import AdminUser, Project, EpitechProject
 from app.auth import hash_password
 from app.config import settings
+from app.logger import log_success, log_error
 
 INITIAL_PROJECTS = {
     "en": [
@@ -327,7 +328,7 @@ def seed_db():
                 hashed_password=hash_password(settings.ADMIN_PASSWORD)
             )
             db.add(admin)
-            print(f"[Seed] Utilisateur admin '{settings.ADMIN_USERNAME}' créé.")
+            log_success("seed.py", "seed_db", f"Utilisateur admin '{settings.ADMIN_USERNAME}' initialisé")
 
         # 2. Projets personnels
         if db.query(Project).count() == 0:
@@ -345,7 +346,7 @@ def seed_db():
                         display_order=proj.get("display_order", 0)
                     )
                     db.add(p)
-            print("[Seed] Projets personnels importés.")
+            log_success("seed.py", "seed_db", "Projets personnels importés avec succès")
 
         # 3. Projets Epitech
         if db.query(EpitechProject).count() == 0:
@@ -361,9 +362,12 @@ def seed_db():
                         display_order=proj.get("display_order", 0)
                     )
                     db.add(ep)
-            print("[Seed] Projets Epitech importés.")
+            log_success("seed.py", "seed_db", "Projets académiques Epitech importés avec succès")
 
         db.commit()
+    except Exception as e:
+        log_error("seed.py", "seed_db", f"Erreur lors du seed initial: {str(e)}")
+        raise e
     finally:
         db.close()
 
