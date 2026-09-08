@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getEpitechProjects } from '../../data/epitechProjects';
+import { fetchEpitechProjects, trackEvent } from '../../services/api';
 import translations from '../../data/translations';
 import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import './EpitechProjects.css';
@@ -17,7 +19,19 @@ function buildAccessRequestUrl(projectName, t) {
 function EpitechProjects() {
     const { lang } = useLanguage();
     const t = translations[lang] || translations.en;
-    const projectList = getEpitechProjects(lang);
+    const [projectList, setProjectList] = useState(() => getEpitechProjects(lang));
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchEpitechProjects(lang).then((data) => {
+            if (isMounted && data && data.length > 0) {
+                setProjectList(data);
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, [lang]);
 
     return (
         <section id="epitech-projects">
@@ -33,7 +47,7 @@ function EpitechProjects() {
             <div className="ep-grid">
                 {projectList.map((p, i) => (
                     <ScrollReveal
-                        key={i}
+                        key={p.id || i}
                         animation="fade-up"
                         delay={i * 80}
                         as="article"
@@ -63,6 +77,7 @@ function EpitechProjects() {
                         <a
                             href={buildAccessRequestUrl(p.name, t)}
                             className="ep-card__cta"
+                            onClick={() => trackEvent('request_epitech_project_access', p.name)}
                         >
                             <span>{t.epitechProjects.cta}</span>
                             <span className="ep-card__cta-arrow">→</span>

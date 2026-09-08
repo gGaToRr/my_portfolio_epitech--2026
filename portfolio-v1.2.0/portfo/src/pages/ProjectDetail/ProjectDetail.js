@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { getProjectBySlug } from '../../data/projects';
+import { fetchProjectBySlug } from '../../services/api';
 import translations from '../../data/translations';
 import './ProjectDetail.css';
 
@@ -8,7 +10,19 @@ function ProjectDetail() {
     const { slug } = useParams();
     const { lang } = useLanguage();
     const t = translations[lang] || translations.en;
-    const project = getProjectBySlug(slug, lang);
+    const [project, setProject] = useState(() => getProjectBySlug(slug, lang));
+
+    useEffect(() => {
+        let isMounted = true;
+        fetchProjectBySlug(slug, lang).then((data) => {
+            if (isMounted && data) {
+                setProject(data);
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, [slug, lang]);
 
     if (!project) {
         return (
@@ -28,14 +42,14 @@ function ProjectDetail() {
                 <h1 className="project-detail__title">{project.title}</h1>
                 <p className="project-detail__tagline">{project.tagline}</p>
                 <div className="project-detail__stack">
-                    {project.stack.map((s, i) => (
+                    {(project.stack || []).map((s, i) => (
                         <span key={i} className="project-detail__stack-item">{s}</span>
                     ))}
                 </div>
             </header>
 
             <div className="project-detail__body">
-                {project.sections.map((s, i) => (
+                {(project.sections || []).map((s, i) => (
                     <section key={i} className="project-detail__section">
                         <h2>{s.heading}</h2>
                         <p>{s.body}</p>
