@@ -239,81 +239,60 @@
     font-size: 0.95rem;
 }
 
-/* Social links in Où me trouver */
-.contact-socials-grid {
+/* Social icons row in Où me trouver */
+.contact-card--socials {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 8px;
 }
 
-.contact-social-btn {
+.contact-social-icons-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-radius: 12px;
+    justify-content: flex-start;
+    gap: 14px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.contact-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-strong);
     text-decoration: none;
-    transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+    font-size: 1.45rem;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.25s ease,
+                border-color 0.25s ease,
+                color 0.25s ease,
+                box-shadow 0.25s ease;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.contact-social-btn:hover {
+.contact-icon-btn:hover {
+    transform: translateY(-4px) scale(1.06);
     background: var(--surface-hover);
     border-color: var(--accent);
     color: var(--accent);
-    transform: translateX(4px);
-    box-shadow: 0 4px 14px var(--accent-glow);
+    box-shadow: 0 10px 22px var(--accent-glow);
 }
 
-.contact-social-icon {
-    font-size: 1.35rem;
-    flex-shrink: 0;
+.contact-icon-btn--yt:hover {
+    border-color: #ff0000;
+    color: #ff0000;
+    box-shadow: 0 10px 22px rgba(255, 0, 0, 0.25);
+}
+
+.contact-icon-btn--epitech:hover {
+    border-color: var(--accent);
     color: var(--accent);
-    width: 22px;
-    height: 22px;
-}
-
-.contact-social-svg {
-    flex-shrink: 0;
-    color: var(--accent);
-}
-
-.contact-social-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-}
-
-.contact-social-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-strong);
-    transition: color 0.2s ease;
-}
-
-.contact-social-btn:hover .contact-social-title {
-    color: var(--accent);
-}
-
-.contact-social-handle {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-}
-
-.contact-social-arrow {
-    font-size: 0.9rem;
-    color: var(--text-faint);
-    transition: transform 0.2s ease, color 0.2s ease;
-}
-
-.contact-social-btn:hover .contact-social-arrow {
-    color: var(--accent);
-    transform: translate(2px, -2px);
+    box-shadow: 0 10px 22px var(--accent-glow);
 }
 
 @media (max-width: 1024px) {

@@ -5,6 +5,7 @@ import useTheme from './hooks/useTheme';
 import './App.css';
 
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail/ProjectDetail'));
+const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 
 function PageLoader() {
     return <div className="page-loader" aria-live="polite">Chargement…</div>;
@@ -25,6 +26,8 @@ function App() {
                             element={<Home theme={theme} onToggleTheme={toggleTheme} />}
                         />
                         <Route path="/projects/:slug" element={<ProjectDetail />} />
+                        <Route path="/youtube" element={<NotFound isYouTube={true} />} />
+                        <Route path="*" element={<NotFound />} />
                     </Routes>
                 </Suspense>
             </div>

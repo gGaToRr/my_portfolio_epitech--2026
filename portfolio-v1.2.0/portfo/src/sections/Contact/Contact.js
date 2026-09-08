@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FaGithub, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { sendContactMessage } from '../../utils/sendContactMessage';
 import './Contact.css';
 
-function EpitechLogo({ size = 22 }) {
+function EpitechLogo({ size = 28 }) {
     return (
         <svg
             width={size}
@@ -279,72 +280,54 @@ function Contact() {
                     </p>
                 </article>
 
-                <article className="contact-card">
+                <article className="contact-card contact-card--socials">
                     <h3 className="contact-card__title">Où me trouver</h3>
                     <p className="contact-card__subtitle">Code, réseaux & école</p>
                     <p className="contact-card__body">
-                        Retrouvez mon profil, mes projets et mes activités :
+                        Retrouvez-moi sur mes différents profils et plateformes :
                     </p>
 
-                    <div className="contact-socials-grid">
+                    <div className="contact-social-icons-row">
                         <a
                             href="https://github.com/gGaToRr"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="contact-social-btn"
-                            title="Profil GitHub"
+                            className="contact-icon-btn"
+                            aria-label="GitHub @gGaToRr"
+                            title="GitHub (@gGaToRr)"
                         >
-                            <FaGithub className="contact-social-icon" />
-                            <div className="contact-social-text">
-                                <span className="contact-social-title">GitHub</span>
-                                <span className="contact-social-handle">@gGaToRr</span>
-                            </div>
-                            <span className="contact-social-arrow">↗</span>
+                            <FaGithub />
                         </a>
 
                         <a
-                            href="https://www.linkedin.com/"
+                            href="https://www.linkedin.com/in/pierre-untersinger-406685253/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="contact-social-btn"
-                            title="Profil LinkedIn"
+                            className="contact-icon-btn"
+                            aria-label="LinkedIn Pierre Untersinger"
+                            title="LinkedIn (Pierre Untersinger)"
                         >
-                            <FaLinkedin className="contact-social-icon" />
-                            <div className="contact-social-text">
-                                <span className="contact-social-title">LinkedIn</span>
-                                <span className="contact-social-handle">Pierre Untersinger</span>
-                            </div>
-                            <span className="contact-social-arrow">↗</span>
+                            <FaLinkedin />
                         </a>
 
-                        <a
-                            href="https://www.youtube.com/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contact-social-btn"
-                            title="Chaîne YouTube"
+                        <Link
+                            to="/youtube"
+                            className="contact-icon-btn contact-icon-btn--yt"
+                            aria-label="Chaîne YouTube"
+                            title="YouTube"
                         >
-                            <FaYoutube className="contact-social-icon" />
-                            <div className="contact-social-text">
-                                <span className="contact-social-title">YouTube</span>
-                                <span className="contact-social-handle">Démos & Tech</span>
-                            </div>
-                            <span className="contact-social-arrow">↗</span>
-                        </a>
+                            <FaYoutube />
+                        </Link>
 
                         <a
                             href="https://www.epitech.eu/"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="contact-social-btn"
-                            title="Epitech Marseille"
+                            className="contact-icon-btn contact-icon-btn--epitech"
+                            aria-label="Epitech Marseille"
+                            title="Epitech Marseille (Promo 2028)"
                         >
-                            <EpitechLogo size={22} />
-                            <div className="contact-social-text">
-                                <span className="contact-social-title">Epitech</span>
-                                <span className="contact-social-handle">Marseille · Promo 2028</span>
-                            </div>
-                            <span className="contact-social-arrow">↗</span>
+                            <EpitechLogo size={26} />
                         </a>
                     </div>
                 </article>

@@ -31,7 +31,7 @@ function Footer() {
                         <FaGithub />
                     </a>
                     <a
-                        href="https://www.linkedin.com/"
+                        href="https://www.linkedin.com/in/pierre-untersinger-406685253/"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="LinkedIn"
@@ -49,7 +49,7 @@ function Footer() {
 
             <div className="site-footer__bottom">
                 <span>© {year} Pierre Untersinger — Tous droits réservés.</span>
-                <span>Built with React · Vanta.js</span>
+                <span>Built with React</span>
             </div>
         </footer>
     );
