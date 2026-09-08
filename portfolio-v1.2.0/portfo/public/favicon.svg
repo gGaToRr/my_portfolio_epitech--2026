@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e131f" />
+      <stop offset="100%" stop-color="#050811" />
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#61dafb" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background container -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" stroke="#1e293b" stroke-width="8" />
+
+  <!-- Subtle glow behind monogram -->
+  <circle cx="256" cy="256" r="140" fill="#0284c7" opacity="0.18" filter="url(#glow)" />
+
+  <!-- Letter P -->
+  <path d="M 136 128 L 226 128 C 274 128 304 154 304 196 C 304 238 274 264 226 264 L 188 264 L 188 384 L 136 384 Z M 188 172 L 188 220 L 222 220 C 246 220 258 210 258 196 C 258 182 246 172 222 172 Z" fill="url(#primaryGrad)" />
+
+  <!-- Letter U with tech overlay -->
+  <path d="M 284 192 L 336 192 L 336 292 C 336 348 302 384 246 384 C 220 384 198 376 182 360 L 210 326 C 220 336 232 342 246 342 C 276 342 284 322 284 292 Z" fill="url(#accentGrad)" />
+
+  <!-- Cyan accent dot / signal -->
+  <circle cx="366" cy="146" r="22" fill="#22c55e" stroke="#0e131f" stroke-width="6" />
+</svg>

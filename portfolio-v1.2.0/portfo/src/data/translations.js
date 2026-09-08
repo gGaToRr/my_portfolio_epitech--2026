@@ -123,6 +123,14 @@ const translations = {
             btnHome: "Back to home",
             btnReplay: "Drop the 4",
         },
+        cvModal: {
+            badge: "Resume Downloaded",
+            title: "Thank you for your interest!",
+            message: "The download of my resume (CV_PIERRE_UNTERSINGER.pdf) has started.",
+            subMessage: "If you have an opportunity or wish to discuss my profile, feel free to reach out via the contact form or LinkedIn!",
+            btnContact: "Contact me",
+            btnClose: "Close",
+        },
     },
     fr: {
         nav: {
@@ -247,6 +255,14 @@ const translations = {
             notFoundDesc: "Il semble que ce lien soit brisé ou que la page ait été déplacée.",
             btnHome: "Retour à l'accueil",
             btnReplay: "Faire tomber le 4",
+        },
+        cvModal: {
+            badge: "CV Téléchargé",
+            title: "Merci pour votre intérêt !",
+            message: "Le téléchargement de mon CV (CV_PIERRE_UNTERSINGER.pdf) a démarré.",
+            subMessage: "Si vous avez une opportunité ou souhaitez échanger sur mon parcours, n'hésitez pas à me contacter via le formulaire ou sur LinkedIn !",
+            btnContact: "Me contacter",
+            btnClose: "Fermer",
         },
     },
 };

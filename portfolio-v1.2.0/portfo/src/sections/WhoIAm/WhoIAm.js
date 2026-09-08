@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { FaDownload, FaPaperPlane, FaMapMarkerAlt, FaServer, FaShieldAlt } from 'react-icons/fa';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../data/translations';
 import SkillIcons from './SkillIcons';
+import CvModal from '../../components/CvModal/CvModal';
 import profilePhoto from '../../assets/me.jpeg';
 import setupPhoto from '../../assets/pierre-setup.jpeg';
 import './WhoIAm.css';
@@ -9,6 +11,18 @@ import './WhoIAm.css';
 function WhoIAm() {
     const { lang } = useLanguage();
     const t = translations[lang] || translations.en;
+    const [isCvModalOpen, setIsCvModalOpen] = useState(false);
+
+    const handleDownloadCv = () => {
+        const link = document.createElement('a');
+        link.href = '/CV_PIERRE_UNTERSINGER.pdf';
+        link.download = 'CV_PIERRE_UNTERSINGER.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setIsCvModalOpen(true);
+    };
 
     return (
         <section id="who">
@@ -113,14 +127,14 @@ function WhoIAm() {
                     </div>
 
                     <div className="who-cta-row">
-                        <a
-                            href="/cv_pierre_untersinger.pdf"
-                            download="CV_Pierre_Untersinger.pdf"
+                        <button
+                            type="button"
+                            onClick={handleDownloadCv}
                             className="btn-who-cta btn-who-cta--primary"
                             title={t.who.btnCv}
                         >
                             <FaDownload /> {t.who.btnCv}
-                        </a>
+                        </button>
                         <a
                             href="#contact"
                             className="btn-who-cta btn-who-cta--ghost"
@@ -140,6 +154,12 @@ function WhoIAm() {
                     <SkillIcons />
                 </article>
             </div>
+
+            <CvModal
+                isOpen={isCvModalOpen}
+                onClose={() => setIsCvModalOpen(false)}
+                t={t}
+            />
         </section>
     );
 }
