@@ -24,6 +24,15 @@ export const formations = [
 
 export const jobExperiences = [
     {
+        id: "liriscom",
+        role: "Technicien Infrastructure Réseau & Cloud",
+        company: "Liriscom",
+        place: "Marseille",
+        period: "2026",
+        contract: "Stage",
+        detail: "Administration et configuration d'infrastructures réseaux, déploiement Cloud, maintenance d'équipements et optimisation de la connectivité.",
+    },
+    {
         id: "bk",
         role: "Équipier polyvalent",
         company: "Burger King",
