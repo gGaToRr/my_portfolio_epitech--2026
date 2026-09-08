@@ -3,6 +3,7 @@ import { FaChevronLeft, FaChevronRight, FaNetworkWired, FaCloud, FaBrain, FaTask
 import { useLanguage } from '../../context/LanguageContext';
 import { getObjectives } from '../../data/objectives';
 import translations from '../../data/translations';
+import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import './Objectives.css';
 
 const ICON_MAP = {
@@ -35,12 +36,14 @@ function Objectives() {
 
     return (
         <section id="objectives">
-            <div className="section-head">
-                <span className="section-subtitle">{t.objectives.subtitle}</span>
-                <h2 className="section-title">{t.objectives.title}</h2>
-            </div>
+            <ScrollReveal animation="fade-up">
+                <div className="section-head">
+                    <span className="section-subtitle">{t.objectives.subtitle}</span>
+                    <h2 className="section-title">{t.objectives.title}</h2>
+                </div>
+            </ScrollReveal>
 
-            <div className="obj-container">
+            <ScrollReveal animation="fade-up" delay={120} className="obj-container">
                 {/* Carousel 3D de cartes */}
                 <div className="obj-carousel-viewport">
                     <div className="obj-carousel-stage">
@@ -133,7 +136,7 @@ function Objectives() {
                         <FaChevronRight />
                     </button>
                 </div>
-            </div>
+            </ScrollReveal>
         </section>
     );
 }

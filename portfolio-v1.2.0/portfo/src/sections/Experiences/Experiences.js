@@ -3,10 +3,11 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getFormations, getJobExperiences } from '../../data/experiences';
 import translations from '../../data/translations';
 import useInView from '../../hooks/useInView';
+import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import './Experiences.css';
 
 function FormationCard({ xp, index }) {
-    const [ref, inView] = useInView({ threshold: 0.2 });
+    const [ref, inView] = useInView({ threshold: 0.15 });
 
     return (
         <article
@@ -38,7 +39,7 @@ function FormationCard({ xp, index }) {
 }
 
 function TimelineItem({ job, index, awardedLabel }) {
-    const [ref, inView] = useInView({ threshold: 0.25 });
+    const [ref, inView] = useInView({ threshold: 0.18 });
     const isAwarded = job.detail && (job.detail.toLowerCase().includes('employé du mois') || job.detail.toLowerCase().includes('employee of the month'));
 
     return (
@@ -88,17 +89,21 @@ function Experiences() {
 
     return (
         <section id="experiences">
-            <div className="section-head">
-                <span className="section-subtitle">{t.experiences.subtitle}</span>
-                <h2 className="section-title">{t.experiences.title}</h2>
-            </div>
+            <ScrollReveal animation="fade-up">
+                <div className="section-head">
+                    <span className="section-subtitle">{t.experiences.subtitle}</span>
+                    <h2 className="section-title">{t.experiences.title}</h2>
+                </div>
+            </ScrollReveal>
 
             {/* 1. Formations & Diplômes */}
             <div className="exp-subsection">
-                <div className="subsection-title-row">
-                    <FaGraduationCap className="subsection-icon" />
-                    <h3 className="subsection-title">{t.experiences.sectionFormations}</h3>
-                </div>
+                <ScrollReveal animation="fade-up" delay={50}>
+                    <div className="subsection-title-row">
+                        <FaGraduationCap className="subsection-icon" />
+                        <h3 className="subsection-title">{t.experiences.sectionFormations}</h3>
+                    </div>
+                </ScrollReveal>
                 <div className="formations-grid">
                     {formationsList.map((xp, i) => (
                         <FormationCard key={xp.id} xp={xp} index={i} />
@@ -108,10 +113,12 @@ function Experiences() {
 
             {/* 2. Expériences Professionnelles */}
             <div className="exp-subsection">
-                <div className="subsection-title-row">
-                    <FaBriefcase className="subsection-icon" />
-                    <h3 className="subsection-title">{t.experiences.sectionJobs}</h3>
-                </div>
+                <ScrollReveal animation="fade-up" delay={50}>
+                    <div className="subsection-title-row">
+                        <FaBriefcase className="subsection-icon" />
+                        <h3 className="subsection-title">{t.experiences.sectionJobs}</h3>
+                    </div>
+                </ScrollReveal>
                 <ol className="exp-timeline-list">
                     {jobsList.map((job, i) => (
                         <TimelineItem

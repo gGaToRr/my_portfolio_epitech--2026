@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from '../../components/Header/Header';
 import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import Footer from '../../components/Footer/Footer';
+import ScrollProgressBar from '../../components/ScrollProgressBar/ScrollProgressBar';
 import Hero from '../../sections/Hero/Hero';
 import WhoIAm from '../../sections/WhoIAm/WhoIAm';
 import Objectives from '../../sections/Objectives/Objectives';
@@ -23,6 +24,7 @@ function Home({ theme, onToggleTheme }) {
 
     return (
         <>
+            <ScrollProgressBar />
             <Header
                 isMenuOpen={isMenuOpen}
                 onOpenMenu={() => setIsMenuOpen(true)}

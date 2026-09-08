@@ -1,0 +1,31 @@
+.scroll-progress-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 9999;
+    background: transparent;
+    pointer-events: none;
+}
+
+.scroll-progress-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #61dafb 0%, #38bdf8 50%, #0284c7 100%);
+    box-shadow: 0 0 10px rgba(97, 218, 251, 0.8), 0 0 4px rgba(2, 132, 199, 0.5);
+    transform-origin: 0% 50%;
+    will-change: transform;
+    transition: transform 0.08s linear;
+}
+
+[data-theme="light"] .scroll-progress-bar {
+    background: linear-gradient(90deg, #0284c7 0%, #0ea5e9 50%, #38bdf8 100%);
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-progress-container {
+        display: none;
+    }
+}

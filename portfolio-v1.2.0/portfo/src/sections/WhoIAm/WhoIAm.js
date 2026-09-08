@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../data/translations';
 import SkillIcons from './SkillIcons';
 import CvModal from '../../components/CvModal/CvModal';
+import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import profilePhoto from '../../assets/me.jpeg';
 import setupPhoto from '../../assets/pierre-setup.jpeg';
 import './WhoIAm.css';
@@ -26,14 +27,16 @@ function WhoIAm() {
 
     return (
         <section id="who">
-            <div className="section-head">
-                <span className="section-subtitle">{t.who.subtitle}</span>
-                <h2 className="section-title">{t.who.title}</h2>
-            </div>
+            <ScrollReveal animation="fade-up">
+                <div className="section-head">
+                    <span className="section-subtitle">{t.who.subtitle}</span>
+                    <h2 className="section-title">{t.who.title}</h2>
+                </div>
+            </ScrollReveal>
 
             <div className="who-bento">
                 {/* 1. Carte Profil */}
-                <article className="who-card who-card--profile">
+                <ScrollReveal animation="fade-up" delay={0} as="article" className="who-card who-card--profile">
                     <div className="profile-avatar-wrap">
                         <div className="profile-avatar-ring">
                             <img
@@ -72,10 +75,10 @@ function WhoIAm() {
                             <span className="stat-value">{t.who.statCyberVal}</span>
                         </div>
                     </div>
-                </article>
+                </ScrollReveal>
 
                 {/* 2. Carte Histoire & Présentation */}
-                <article className="who-card who-card--bio">
+                <ScrollReveal animation="fade-up" delay={120} as="article" className="who-card who-card--bio">
                     <div className="bio-head">
                         <h3>{t.who.bioTitle}</h3>
                         <p className="bio-lead">
@@ -143,16 +146,16 @@ function WhoIAm() {
                             <FaPaperPlane /> {t.who.btnContact}
                         </a>
                     </div>
-                </article>
+                </ScrollReveal>
 
                 {/* 3. Carte Compétences & Stack */}
-                <article className="who-card who-card--skills">
+                <ScrollReveal animation="fade-up" delay={240} as="article" className="who-card who-card--skills">
                     <div className="skills-header">
                         <h3 className="skills-heading">{t.who.skillsHeading}</h3>
                         <span className="skills-count">{t.who.skillsCount}</span>
                     </div>
                     <SkillIcons />
-                </article>
+                </ScrollReveal>
             </div>
 
             <CvModal

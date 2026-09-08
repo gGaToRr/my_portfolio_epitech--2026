@@ -1,6 +1,7 @@
 import { useLanguage } from '../../context/LanguageContext';
 import { getEpitechProjects } from '../../data/epitechProjects';
 import translations from '../../data/translations';
+import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import './EpitechProjects.css';
 
 const CONTACT_EMAIL = 'pierre.untersinger2@gmail.com';
@@ -20,16 +21,24 @@ function EpitechProjects() {
 
     return (
         <section id="epitech-projects">
-            <div className="ep-head">
-                <h2>{t.epitechProjects.title}</h2>
-                <p className="ep-intro">
-                    {t.epitechProjects.intro}
-                </p>
-            </div>
+            <ScrollReveal animation="fade-up">
+                <div className="ep-head">
+                    <h2>{t.epitechProjects.title}</h2>
+                    <p className="ep-intro">
+                        {t.epitechProjects.intro}
+                    </p>
+                </div>
+            </ScrollReveal>
 
             <div className="ep-grid">
                 {projectList.map((p, i) => (
-                    <article key={i} className="ep-card">
+                    <ScrollReveal
+                        key={i}
+                        animation="fade-up"
+                        delay={i * 80}
+                        as="article"
+                        className="ep-card"
+                    >
                         <div className="ep-card__top">
                             <span className="ep-card__num">
                                 {String(i + 1).padStart(2, '0')}
@@ -58,7 +67,7 @@ function EpitechProjects() {
                             <span>{t.epitechProjects.cta}</span>
                             <span className="ep-card__cta-arrow">→</span>
                         </a>
-                    </article>
+                    </ScrollReveal>
                 ))}
             </div>
         </section>

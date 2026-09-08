@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 
-function useInView({ threshold = 0.2, rootMargin = '0px', once = true } = {}) {
+function useInView({ threshold = 0.15, rootMargin = '0px', once = true } = {}) {
     const ref = useRef(null);
-    const [inView, setInView] = useState(false);
+    const [inView, setInView] = useState(() => {
+        return typeof window === 'undefined' || !('IntersectionObserver' in window);
+    });
 
     useEffect(() => {
+        if (!('IntersectionObserver' in window)) {
+            setInView(true);
+            return;
+        }
+
         const node = ref.current;
         if (!node) return;
 

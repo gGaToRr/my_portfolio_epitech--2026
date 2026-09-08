@@ -1,16 +1,14 @@
 services:
   portfolio:
     build:
-      context: ./portfolio-v1.2.0/portfo
+      context: .
       dockerfile: Dockerfile
     container_name: pierre_portfolio
     restart: unless-stopped
     ports:
       - "${PORT:-3006}:5001"
     env_file:
-      - path: ./portfolio-v1.2.0/portfo/.env.local
-        required: false
-      - path: ./portfolio-v1.2.0/portfo/.env
+      - path: ./.env.local
         required: false
       - path: ./.env
         required: false

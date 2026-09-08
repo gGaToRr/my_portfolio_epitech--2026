@@ -4,6 +4,7 @@ import { FaGithub, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../data/translations';
 import { sendContactMessage } from '../../utils/sendContactMessage';
+import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
 import './Contact.css';
 
 function EpitechLogo({ size = 28 }) {
@@ -157,10 +158,17 @@ function Contact() {
 
     return (
         <section id="contact">
-            <h2>{t.contact.title}</h2>
+            <ScrollReveal animation="fade-up">
+                <h2>{t.contact.title}</h2>
+            </ScrollReveal>
 
             <div className="contact-grid">
-                <article className="contact-card contact-card--form">
+                <ScrollReveal
+                    animation="fade-up"
+                    delay={0}
+                    as="article"
+                    className="contact-card contact-card--form"
+                >
                     <h3 className="contact-card__title">{t.contact.formTitle}</h3>
                     <p className="contact-card__subtitle">
                         {t.contact.formSubtitle}
@@ -278,17 +286,27 @@ function Contact() {
                             </div>
                         </form>
                     )}
-                </article>
+                </ScrollReveal>
 
-                <article className="contact-card">
+                <ScrollReveal
+                    animation="fade-up"
+                    delay={120}
+                    as="article"
+                    className="contact-card"
+                >
                     <h3 className="contact-card__title">{t.contact.lookingTitle}</h3>
                     <p className="contact-card__subtitle">{t.contact.lookingSubtitle}</p>
                     <p className="contact-card__body">
                         {t.contact.lookingBody}
                     </p>
-                </article>
+                </ScrollReveal>
 
-                <article className="contact-card contact-card--socials">
+                <ScrollReveal
+                    animation="fade-up"
+                    delay={240}
+                    as="article"
+                    className="contact-card contact-card--socials"
+                >
                     <h3 className="contact-card__title">{t.contact.socialsTitle}</h3>
                     <p className="contact-card__subtitle">{t.contact.socialsSubtitle}</p>
                     <p className="contact-card__body">
@@ -338,7 +356,7 @@ function Contact() {
                             <EpitechLogo size={26} />
                         </a>
                     </div>
-                </article>
+                </ScrollReveal>
             </div>
         </section>
     );

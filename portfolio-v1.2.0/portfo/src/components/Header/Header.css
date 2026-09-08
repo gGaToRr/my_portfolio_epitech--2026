@@ -76,6 +76,15 @@
     color: var(--accent);
 }
 
+.link-pc a button.is-active {
+    background: var(--accent-soft);
+    border-color: var(--accent-mid);
+    color: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 0 14px var(--accent-glow);
+    transform: translateX(4px);
+}
+
 .hamburger-button {
     display: none;
     background: none;
