@@ -212,7 +212,7 @@ const server = http.createServer((req, res) => {
 
     // Service des fichiers statiques (si build/ existe)
     const buildDir = path.join(__dirname, 'build');
-    if (fs.existsSync(buildDir) && req.method === 'GET') {
+    if (fs.existsSync(buildDir) && (req.method === 'GET' || req.method === 'HEAD')) {
         let filePath = path.join(buildDir, url.pathname === '/' ? 'index.html' : url.pathname);
         if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
             filePath = path.join(buildDir, 'index.html');
