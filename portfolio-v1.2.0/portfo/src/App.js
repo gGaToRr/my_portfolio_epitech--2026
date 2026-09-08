@@ -29,7 +29,7 @@ function App() {
                             element={<Home theme={theme} onToggleTheme={toggleTheme} />}
                         />
                         <Route path="/projects/:slug" element={<ProjectDetail />} />
-                        <Route path="/admin" element={<Admin />} />
+                        <Route path="/panelAdmin" element={<Admin />} />
                         <Route path="/youtube" element={<NotFound isYouTube={true} />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>

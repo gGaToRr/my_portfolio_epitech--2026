@@ -1,6 +1,6 @@
 # Portfolio — Pierre Untersinger (Epitech 2026 / Promo 2028)
 
-Portfolio personnel interactif développé en **React 19** + **FastAPI (Python)** avec base **SQLite**, animations 3D **Vanta.js / Three.js**, gestion du thème sombre/clair, **Dashboard Admin** (`/admin`) et suivi **Analytique RGPD-friendly**.
+Portfolio personnel interactif développé en **React 19** + **FastAPI (Python)** avec base **SQLite**, animations 3D **Vanta.js / Three.js**, gestion du thème sombre/clair, **Dashboard Admin** (`/panelAdmin`) et suivi **Analytique RGPD-friendly**.
 
 ---
 
@@ -25,8 +25,9 @@ npm install
 npm start
 ```
 - **Site Portfolio** : [http://localhost:3006](http://localhost:3006)
-- **Dashboard Admin & Analytics** : [http://localhost:3006/admin](http://localhost:3006/admin)
+- **Dashboard Admin & Analytics** : [http://localhost:3006/panelAdmin](http://localhost:3006/panelAdmin)
   - Identifiants par défaut : `admin` / `admin123` (configurables dans `.env.local`)
+  - Durée de validité du token JWT : **30 minutes**
 
 ---
 
