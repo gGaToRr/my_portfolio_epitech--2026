@@ -211,7 +211,6 @@ function Contact() {
                                         value={currentValue}
                                         onChange={handleChange}
                                         placeholder={currentStep.placeholder}
-                                        autoFocus
                                         required={currentStep.required}
                                         disabled={sending}
                                         maxLength={currentStep.maxLength}
@@ -223,7 +222,6 @@ function Contact() {
                                         value={currentValue}
                                         onChange={handleChange}
                                         placeholder={currentStep.placeholder}
-                                        autoFocus
                                         required={currentStep.required}
                                         disabled={sending}
                                         maxLength={currentStep.maxLength}

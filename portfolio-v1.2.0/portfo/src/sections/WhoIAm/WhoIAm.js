@@ -1,6 +1,7 @@
 import { FaDownload, FaPaperPlane, FaMapMarkerAlt, FaServer, FaShieldAlt } from 'react-icons/fa';
 import SkillIcons from './SkillIcons';
 import profilePhoto from '../../assets/me.jpeg';
+import setupPhoto from '../../assets/pierre-setup.jpeg';
 import './WhoIAm.css';
 
 function WhoIAm() {
@@ -61,6 +62,18 @@ function WhoIAm() {
                         <p className="bio-lead">
                             Étudiant à <strong>Epitech Marseille</strong>, je conçois et déploie des solutions logicielles et d'infrastructure avec rigueur et autonomie.
                         </p>
+                    </div>
+
+                    <div className="bio-photo-card">
+                        <img
+                            src={setupPhoto}
+                            alt="Pierre Untersinger en train de développer et d'administrer des systèmes"
+                            className="bio-photo-img"
+                            loading="lazy"
+                        />
+                        <div className="bio-photo-overlay">
+                            <span className="bio-photo-tag">Architecture & Code</span>
+                        </div>
                     </div>
 
                     <div className="bio-pillars">

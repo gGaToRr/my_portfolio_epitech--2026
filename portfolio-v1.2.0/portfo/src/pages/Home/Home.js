@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../../components/Header/Header';
 import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import Footer from '../../components/Footer/Footer';
@@ -14,6 +14,12 @@ import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 function Home({ theme, onToggleTheme }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     useBodyScrollLock(isMenuOpen);
+
+    useEffect(() => {
+        if (!window.location.hash || window.location.hash === '#home') {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        }
+    }, []);
 
     return (
         <>
