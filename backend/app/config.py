@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Sécurité & Auth Admin
     SECRET_KEY: str = "portfolio_super_secret_jwt_key_change_me_in_prod_2026"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 jours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "admin123"  # À changer dans .env.local
 
