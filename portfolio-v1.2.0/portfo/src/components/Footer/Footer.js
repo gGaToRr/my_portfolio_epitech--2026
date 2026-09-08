@@ -1,24 +1,29 @@
 import { FaGithub, FaLinkedin, FaEnvelope } from 'react-icons/fa';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../data/translations';
 import './Footer.css';
 
 const year = new Date().getFullYear();
 
 function Footer() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+
     return (
         <footer className="site-footer">
             <div className="site-footer__inner">
                 <div className="site-footer__brand">
                     <h3>Pierre Untersinger</h3>
-                    <p>Étudiant Epitech Marseille — Développement & Infrastructures</p>
+                    <p>{t.footer.brandDesc}</p>
                 </div>
 
                 <nav className="site-footer__nav" aria-label="Navigation pied de page">
-                    <a href="#who">Who I am</a>
-                    <a href="#objectives">Objectives</a>
-                    <a href="#experiences">Experiences</a>
-                    <a href="#projects">Projects</a>
-                    <a href="#epitech-projects">Epitech</a>
-                    <a href="#contact">Contact</a>
+                    <a href="#who">{t.nav.who}</a>
+                    <a href="#objectives">{t.nav.objectives}</a>
+                    <a href="#experiences">{t.nav.experiences}</a>
+                    <a href="#projects">{t.nav.projects}</a>
+                    <a href="#epitech-projects">{t.nav.epitech}</a>
+                    <a href="#contact">{t.nav.contact}</a>
                 </nav>
 
                 <div className="site-footer__socials">
@@ -48,8 +53,8 @@ function Footer() {
             </div>
 
             <div className="site-footer__bottom">
-                <span>© {year} Pierre Untersinger — Tous droits réservés.</span>
-                <span>Built with React</span>
+                <span>{t.footer.copyright.replace('{year}', year)}</span>
+                <span>{t.footer.builtWith}</span>
             </div>
         </footer>
     );

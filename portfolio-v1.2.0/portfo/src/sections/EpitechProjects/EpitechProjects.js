@@ -1,30 +1,34 @@
-import epitechProjects from '../../data/epitechProjects';
+import { useLanguage } from '../../context/LanguageContext';
+import { getEpitechProjects } from '../../data/epitechProjects';
+import translations from '../../data/translations';
 import './EpitechProjects.css';
 
 const CONTACT_EMAIL = 'pierre.untersinger2@gmail.com';
 
-function buildAccessRequestUrl(projectName) {
-    const subject = encodeURIComponent(`Demande d'accès au repo Epitech — ${projectName}`);
+function buildAccessRequestUrl(projectName, t) {
+    const subject = encodeURIComponent(`${t.epitechProjects.mailSubject}${projectName}`);
     const body = encodeURIComponent(
-        `Bonjour Pierre,\n\nJe souhaiterais consulter le code du projet « ${projectName} ».\n\nMon profil GitHub : \n\nMerci !`
+        `${t.epitechProjects.mailBodyGreeting}\n\n${t.epitechProjects.mailBodyContent} « ${projectName} ».\n\n${t.epitechProjects.mailBodyGithub} \n\n${t.epitechProjects.mailBodyThanks}`
     );
     return `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
 }
 
 function EpitechProjects() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+    const projectList = getEpitechProjects(lang);
+
     return (
         <section id="epitech-projects">
             <div className="ep-head">
-                <h2>Projets Epitech</h2>
+                <h2>{t.epitechProjects.title}</h2>
                 <p className="ep-intro">
-                    Les projets réalisés à Epitech sont soumis à la politique anti-plagiat de l'école :
-                    le code ne peut pas être public. Pour un recruteur ou un curieux,
-                    je donne l'accès en lecture sur demande.
+                    {t.epitechProjects.intro}
                 </p>
             </div>
 
             <div className="ep-grid">
-                {epitechProjects.map((p, i) => (
+                {projectList.map((p, i) => (
                     <article key={i} className="ep-card">
                         <div className="ep-card__top">
                             <span className="ep-card__num">
@@ -41,17 +45,17 @@ function EpitechProjects() {
 
                         {p.tags && p.tags.length > 0 && (
                             <div className="ep-card__techs">
-                                {p.tags.map((t, j) => (
-                                    <span key={j} className="ep-card__tech">{t}</span>
+                                {p.tags.map((tTag, j) => (
+                                    <span key={j} className="ep-card__tech">{tTag}</span>
                                 ))}
                             </div>
                         )}
 
                         <a
-                            href={buildAccessRequestUrl(p.name)}
+                            href={buildAccessRequestUrl(p.name, t)}
                             className="ep-card__cta"
                         >
-                            <span>Demander l'accès</span>
+                            <span>{t.epitechProjects.cta}</span>
                             <span className="ep-card__cta-arrow">→</span>
                         </a>
                     </article>

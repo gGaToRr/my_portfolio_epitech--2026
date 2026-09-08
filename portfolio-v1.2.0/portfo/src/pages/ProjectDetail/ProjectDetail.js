@@ -1,24 +1,28 @@
 import { Link, useParams } from 'react-router-dom';
-import projects from '../../data/projects';
+import { useLanguage } from '../../context/LanguageContext';
+import { getProjectBySlug } from '../../data/projects';
+import translations from '../../data/translations';
 import './ProjectDetail.css';
 
 function ProjectDetail() {
     const { slug } = useParams();
-    const project = projects.find((p) => p.slug === slug);
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+    const project = getProjectBySlug(slug, lang);
 
     if (!project) {
         return (
             <main className="project-detail">
-                <Link to="/" className="project-detail__back">← Retour au portfolio</Link>
-                <h1>Projet introuvable</h1>
-                <p>Le projet « {slug} » n'existe pas.</p>
+                <Link to="/" className="project-detail__back">{t.projectDetail.back}</Link>
+                <h1>{t.projectDetail.notFoundTitle}</h1>
+                <p>{t.projectDetail.notFoundDesc.replace('{slug}', slug)}</p>
             </main>
         );
     }
 
     return (
         <main className="project-detail">
-            <Link to="/#projects" className="project-detail__back">← Retour au portfolio</Link>
+            <Link to="/#projects" className="project-detail__back">{t.projectDetail.back}</Link>
 
             <header className="project-detail__header">
                 <h1 className="project-detail__title">{project.title}</h1>

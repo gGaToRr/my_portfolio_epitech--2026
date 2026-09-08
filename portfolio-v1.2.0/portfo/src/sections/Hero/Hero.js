@@ -1,38 +1,42 @@
 import { FaArrowDown, FaPaperPlane } from 'react-icons/fa';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../data/translations';
 import './Hero.css';
 
 function Hero() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+
     return (
         <section id="home" className="hero-section">
             <div className="hero-content">
-                <span className="hero-eyebrow">Bonjour, je suis</span>
+                <span className="hero-eyebrow">{t.hero.eyebrow}</span>
 
-                <h1 className="hero-name">Pierre Untersinger</h1>
+                <h1 className="hero-name">{t.hero.name}</h1>
 
                 <p className="hero-tagline">
-                    Étudiant en Ingénierie Informatique @ <strong>Epitech Marseille</strong>
+                    {t.hero.taglinePrefix} <strong>{t.hero.school}</strong>
                 </p>
 
                 <p className="hero-description">
-                    Passionné par l'architecture réseau, l'administration système et le Cloud.
-                    J'aime concevoir des infrastructures fiables, automatiser les environnements et développer des outils performants.
+                    {t.hero.description}
                 </p>
 
                 <div className="hero-actions">
                     <a href="#who" className="btn-hero btn-hero--primary">
-                        Découvrir mon profil <FaArrowDown className="btn-icon" />
+                        {t.hero.btnProfile} <FaArrowDown className="btn-icon" />
                     </a>
                     <a href="#contact" className="btn-hero btn-hero--ghost">
-                        Me contacter <FaPaperPlane className="btn-icon" />
+                        {t.hero.btnContact} <FaPaperPlane className="btn-icon" />
                     </a>
                 </div>
             </div>
 
-            <a href="#who" className="hero-scroll-indicator" aria-label="Défiler vers À propos">
+            <a href="#who" className="hero-scroll-indicator" aria-label={t.hero.scroll}>
                 <div className="mouse-wheel">
                     <span className="mouse-dot" />
                 </div>
-                <span className="scroll-text">Découvrir</span>
+                <span className="scroll-text">{t.hero.scroll}</span>
             </a>
         </section>
     );

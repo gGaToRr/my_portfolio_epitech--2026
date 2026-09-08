@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { FaChevronLeft, FaChevronRight, FaNetworkWired, FaCloud, FaBrain, FaTasks } from 'react-icons/fa';
-import objectives from '../../data/objectives';
+import { useLanguage } from '../../context/LanguageContext';
+import { getObjectives } from '../../data/objectives';
+import translations from '../../data/translations';
 import './Objectives.css';
 
 const ICON_MAP = {
@@ -11,8 +13,12 @@ const ICON_MAP = {
 };
 
 function Objectives() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+    const objectivesList = getObjectives(lang);
+
     const [active, setActive] = useState(0);
-    const count = objectives.length;
+    const count = objectivesList.length;
 
     const next = useCallback(() => setActive((i) => (i + 1) % count), [count]);
     const prev = useCallback(() => setActive((i) => (i - 1 + count) % count), [count]);
@@ -30,15 +36,15 @@ function Objectives() {
     return (
         <section id="objectives">
             <div className="section-head">
-                <span className="section-subtitle">Vision & Projections</span>
-                <h2 className="section-title">My objectives</h2>
+                <span className="section-subtitle">{t.objectives.subtitle}</span>
+                <h2 className="section-title">{t.objectives.title}</h2>
             </div>
 
             <div className="obj-container">
                 {/* Carousel 3D de cartes */}
                 <div className="obj-carousel-viewport">
                     <div className="obj-carousel-stage">
-                        {objectives.map((obj, i) => {
+                        {objectivesList.map((obj, i) => {
                             let diff = i - active;
                             if (diff > count / 2) diff -= count;
                             if (diff < -count / 2) diff += count;
@@ -97,20 +103,20 @@ function Objectives() {
                         type="button"
                         className="obj-nav-btn"
                         onClick={prev}
-                        aria-label="Objectif précédent"
-                        title="Précédent (Flèche gauche)"
+                        aria-label={t.objectives.prevLabel}
+                        title={t.objectives.prevLabel}
                     >
                         <FaChevronLeft />
                     </button>
 
                     <div className="obj-dots-container">
-                        {objectives.map((obj, i) => (
+                        {objectivesList.map((obj, i) => (
                             <button
                                 key={obj.id}
                                 type="button"
                                 className={`obj-dot-btn ${i === active ? 'is-active' : ''}`}
                                 onClick={() => setActive(i)}
-                                aria-label={`Aller à l'objectif ${i + 1} : ${obj.title}`}
+                                aria-label={`${t.objectives.goTo} ${i + 1} : ${obj.title}`}
                             >
                                 <span className="obj-dot-label">{obj.number}</span>
                             </button>
@@ -121,8 +127,8 @@ function Objectives() {
                         type="button"
                         className="obj-nav-btn"
                         onClick={next}
-                        aria-label="Objectif suivant"
-                        title="Suivant (Flèche droite)"
+                        aria-label={t.objectives.nextLabel}
+                        title={t.objectives.nextLabel}
                     >
                         <FaChevronRight />
                     </button>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaGithub, FaLinkedin, FaYoutube } from 'react-icons/fa';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../data/translations';
 import { sendContactMessage } from '../../utils/sendContactMessage';
 import './Contact.css';
 
@@ -24,44 +26,42 @@ function EpitechLogo({ size = 28 }) {
     );
 }
 
-const STEPS = [
-    {
-        name: 'name',
-        label: 'Nom',
-        type: 'text',
-        placeholder: 'Votre nom',
-        required: true,
-        question: 'Comment vous appelez-vous ?',
-        maxLength: 80,
-    },
-    {
-        name: 'email',
-        label: 'Email',
-        type: 'email',
-        placeholder: 'vous@exemple.com',
-        required: true,
-        question: 'Quelle est votre adresse email ?',
-        maxLength: 120,
-    },
-    {
-        name: 'phone',
-        label: 'Téléphone',
-        type: 'tel',
-        placeholder: '+33 6 XX XX XX XX',
-        required: false,
-        question: 'Un numéro pour vous joindre ? (optionnel)',
-        maxLength: 32,
-    },
-    {
-        name: 'message',
-        label: 'Message',
-        type: 'textarea',
-        placeholder: 'Votre message...',
-        required: true,
-        question: 'Que souhaitez-vous me dire ?',
-        maxLength: 4000,
-    },
-];
+function getSteps(t) {
+    return [
+        {
+            name: 'name',
+            type: 'text',
+            placeholder: t.contact.phName,
+            required: true,
+            question: t.contact.qName,
+            maxLength: 80,
+        },
+        {
+            name: 'email',
+            type: 'email',
+            placeholder: t.contact.phEmail,
+            required: true,
+            question: t.contact.qEmail,
+            maxLength: 120,
+        },
+        {
+            name: 'phone',
+            type: 'tel',
+            placeholder: t.contact.phPhone,
+            required: false,
+            question: t.contact.qPhone,
+            maxLength: 32,
+        },
+        {
+            name: 'message',
+            type: 'textarea',
+            placeholder: t.contact.phMessage,
+            required: true,
+            question: t.contact.qMessage,
+            maxLength: 4000,
+        },
+    ];
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+()\d\s.-]{6,32}$/;
@@ -87,19 +87,23 @@ function isStepValid(step, value) {
 }
 
 function Contact() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+    const steps = getSteps(t);
+
     const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
     const [stepIndex, setStepIndex] = useState(0);
     const [submitted, setSubmitted] = useState(false);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState(null);
 
-    const currentStep = STEPS[stepIndex];
+    const currentStep = steps[stepIndex] || steps[0];
     const currentValue = form[currentStep.name];
     const canAdvance = isStepValid(currentStep, currentValue);
-    const isLast = stepIndex === STEPS.length - 1;
+    const isLast = stepIndex === steps.length - 1;
 
     const handleChange = (e) => {
-        const step = STEPS.find((s) => s.name === e.target.name);
+        const step = steps.find((s) => s.name === e.target.name);
         const clean = sanitizeInput(e.target.value, step ? step.maxLength : undefined);
         setForm({ ...form, [e.target.name]: clean });
     };
@@ -111,7 +115,7 @@ function Contact() {
             await sendContactMessage(form);
             setSubmitted(true);
         } catch (err) {
-            setError(err.message || "Une erreur est survenue. Réessayez.");
+            setError(err.message || (lang === 'fr' ? "Une erreur est survenue. Réessayez." : "An error occurred. Please try again."));
         } finally {
             setSending(false);
         }
@@ -149,17 +153,17 @@ function Contact() {
         setError(null);
     };
 
-    const progress = ((stepIndex + (submitted ? 1 : 0)) / STEPS.length) * 100;
+    const progress = ((stepIndex + (submitted ? 1 : 0)) / steps.length) * 100;
 
     return (
         <section id="contact">
-            <h2>Contact Me</h2>
+            <h2>{t.contact.title}</h2>
 
             <div className="contact-grid">
                 <article className="contact-card contact-card--form">
-                    <h3 className="contact-card__title">Écrivez-moi</h3>
+                    <h3 className="contact-card__title">{t.contact.formTitle}</h3>
                     <p className="contact-card__subtitle">
-                        Une question, un projet ? Répondez étape par étape.
+                        {t.contact.formSubtitle}
                     </p>
 
                     {!submitted && (
@@ -171,24 +175,33 @@ function Contact() {
                                 />
                             </div>
                             <div className="contact-stepper__meta">
-                                Étape {stepIndex + 1} / {STEPS.length}
+                                {t.contact.stepLabel} {stepIndex + 1} {t.contact.stepOf} {steps.length}
                             </div>
                         </div>
                     )}
 
                     {submitted ? (
                         <div className="contact-success">
-                            <h4 className="contact-success__title">Merci {form.name} !</h4>
+                            <h4 className="contact-success__title">
+                                {t.contact.successTitle.replace('{name}', form.name)}
+                            </h4>
                             <p className="contact-success__text">
-                                Votre message a bien été envoyé. Je vous répondrai à
-                                l'adresse <strong>{form.email}</strong> dès que possible.
+                                {lang === 'fr' ? (
+                                    <>
+                                        Votre message a bien été envoyé. Je vous répondrai à l'adresse <strong>{form.email}</strong> dès que possible.
+                                    </>
+                                ) : (
+                                    <>
+                                        Your message has been sent successfully. I will get back to you at <strong>{form.email}</strong> as soon as possible.
+                                    </>
+                                )}
                             </p>
                             <button
                                 type="button"
                                 className="contact-submit contact-submit--ghost"
                                 onClick={reset}
                             >
-                                Envoyer un autre message
+                                {t.contact.btnReset}
                             </button>
                         </div>
                     ) : (
@@ -249,7 +262,7 @@ function Contact() {
                                     onClick={goPrev}
                                     disabled={stepIndex === 0 || sending}
                                 >
-                                    Précédent
+                                    {t.contact.btnPrev}
                                 </button>
                                 <button
                                     type="submit"
@@ -257,10 +270,10 @@ function Contact() {
                                     disabled={!canAdvance || sending}
                                 >
                                     {sending
-                                        ? 'Envoi…'
+                                        ? t.contact.btnSending
                                         : isLast
-                                        ? 'Envoyer'
-                                        : 'Suivant'}
+                                        ? t.contact.btnSend
+                                        : t.contact.btnNext}
                                 </button>
                             </div>
                         </form>
@@ -268,21 +281,18 @@ function Contact() {
                 </article>
 
                 <article className="contact-card">
-                    <h3 className="contact-card__title">Ce que je cherche</h3>
-                    <p className="contact-card__subtitle">Stage · alternance · collab</p>
+                    <h3 className="contact-card__title">{t.contact.lookingTitle}</h3>
+                    <p className="contact-card__subtitle">{t.contact.lookingSubtitle}</p>
                     <p className="contact-card__body">
-                        Étudiant à Epitech Marseille (promo 2028), je m'oriente vers le
-                        réseau et la cybersécurité. Ouvert aux opportunités de stage,
-                        d'alternance ou de collaboration sur des projets perso autour de
-                        l'infra, du pentest et de l'embarqué.
+                        {t.contact.lookingBody}
                     </p>
                 </article>
 
                 <article className="contact-card contact-card--socials">
-                    <h3 className="contact-card__title">Où me trouver</h3>
-                    <p className="contact-card__subtitle">Code, réseaux & école</p>
+                    <h3 className="contact-card__title">{t.contact.socialsTitle}</h3>
+                    <p className="contact-card__subtitle">{t.contact.socialsSubtitle}</p>
                     <p className="contact-card__body">
-                        Retrouvez-moi sur mes différents profils et plateformes :
+                        {t.contact.socialsBody}
                     </p>
 
                     <div className="contact-social-icons-row">
@@ -311,7 +321,7 @@ function Contact() {
                         <Link
                             to="/youtube"
                             className="contact-icon-btn contact-icon-btn--yt"
-                            aria-label="Chaîne YouTube"
+                            aria-label={t.notFound.ytBadge}
                             title="YouTube"
                         >
                             <FaYoutube />
@@ -323,7 +333,7 @@ function Contact() {
                             rel="noopener noreferrer"
                             className="contact-icon-btn contact-icon-btn--epitech"
                             aria-label="Epitech Marseille"
-                            title="Epitech Marseille (Promo 2028)"
+                            title="Epitech Marseille"
                         >
                             <EpitechLogo size={26} />
                         </a>

@@ -1,5 +1,7 @@
 import { FaGraduationCap, FaBriefcase, FaMapMarkerAlt, FaCalendarAlt, FaTrophy } from 'react-icons/fa';
-import { formations, jobExperiences } from '../../data/experiences';
+import { useLanguage } from '../../context/LanguageContext';
+import { getFormations, getJobExperiences } from '../../data/experiences';
+import translations from '../../data/translations';
 import useInView from '../../hooks/useInView';
 import './Experiences.css';
 
@@ -35,9 +37,9 @@ function FormationCard({ xp, index }) {
     );
 }
 
-function TimelineItem({ job, index }) {
+function TimelineItem({ job, index, awardedLabel }) {
     const [ref, inView] = useInView({ threshold: 0.25 });
-    const isAwarded = job.detail && job.detail.toLowerCase().includes('employé du mois');
+    const isAwarded = job.detail && (job.detail.toLowerCase().includes('employé du mois') || job.detail.toLowerCase().includes('employee of the month'));
 
     return (
         <li
@@ -70,7 +72,7 @@ function TimelineItem({ job, index }) {
 
                 {isAwarded && (
                     <div className="timeline-highlight-badge">
-                        <FaTrophy className="trophy-icon" /> 3x Employé du mois
+                        <FaTrophy className="trophy-icon" /> {awardedLabel}
                     </div>
                 )}
             </div>
@@ -79,21 +81,26 @@ function TimelineItem({ job, index }) {
 }
 
 function Experiences() {
+    const { lang } = useLanguage();
+    const t = translations[lang] || translations.en;
+    const formationsList = getFormations(lang);
+    const jobsList = getJobExperiences(lang);
+
     return (
         <section id="experiences">
             <div className="section-head">
-                <span className="section-subtitle">Parcours & Formations</span>
-                <h2 className="section-title">My experiences</h2>
+                <span className="section-subtitle">{t.experiences.subtitle}</span>
+                <h2 className="section-title">{t.experiences.title}</h2>
             </div>
 
             {/* 1. Formations & Diplômes */}
             <div className="exp-subsection">
                 <div className="subsection-title-row">
                     <FaGraduationCap className="subsection-icon" />
-                    <h3 className="subsection-title">Formations & Certifications</h3>
+                    <h3 className="subsection-title">{t.experiences.sectionFormations}</h3>
                 </div>
                 <div className="formations-grid">
-                    {formations.map((xp, i) => (
+                    {formationsList.map((xp, i) => (
                         <FormationCard key={xp.id} xp={xp} index={i} />
                     ))}
                 </div>
@@ -103,11 +110,16 @@ function Experiences() {
             <div className="exp-subsection">
                 <div className="subsection-title-row">
                     <FaBriefcase className="subsection-icon" />
-                    <h3 className="subsection-title">Expériences Professionnelles</h3>
+                    <h3 className="subsection-title">{t.experiences.sectionJobs}</h3>
                 </div>
                 <ol className="exp-timeline-list">
-                    {jobExperiences.map((job, i) => (
-                        <TimelineItem key={job.id} job={job} index={i} />
+                    {jobsList.map((job, i) => (
+                        <TimelineItem
+                            key={job.id}
+                            job={job}
+                            index={i}
+                            awardedLabel={t.experiences.awardedBadge}
+                        />
                     ))}
                 </ol>
             </div>
