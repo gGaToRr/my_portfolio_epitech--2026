@@ -22,30 +22,6 @@ export const formations = [
     },
 ];
 
-export const personalProjects = [
-    {
-        id: "merci-launcher",
-        title: "Merci-Launcher",
-        company: "Projet personnel",
-        summary: "Architecture sérieuse : FastAPI, GTK4, Tauri/Rust. Versioning SemVer, démarche pro.",
-        tags: ["FastAPI", "Tauri / Rust", "GTK4", "SemVer"],
-    },
-    {
-        id: "merci-media",
-        title: "Merci Media",
-        company: "Projet personnel",
-        summary: "Stack complète Flask, Docker, nginx, JWT, SQLAlchemy. Déploiement réel.",
-        tags: ["Flask", "Docker", "nginx", "JWT", "SQLAlchemy"],
-    },
-    {
-        id: "home-server",
-        title: "Serveur personnel",
-        company: "Auto-hébergement",
-        summary: "Administration quotidienne : autonomie et curiosité réseau/infra.",
-        tags: ["Linux", "Réseau", "Infra"],
-    },
-];
-
 export const jobExperiences = [
     {
         id: "bk",
@@ -70,7 +46,7 @@ export const jobExperiences = [
         role: "Transaction, gestion et location de biens",
         company: "Cabinet Immobilier Gessien",
         place: "Divonne-les-Bains",
-        period: "Novembre 2022 → Mars 2022",
+        period: "Novembre 2021 → Mars 2022",
         contract: "10 semaines",
         detail: "Fidélisation client, visites de biens, contact artisans/clients.",
     },

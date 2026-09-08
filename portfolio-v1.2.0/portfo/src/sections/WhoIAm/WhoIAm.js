@@ -18,7 +18,7 @@ function WhoIAm() {
                             src={profilePhoto}
                             alt="Pierre Untersinger"
                             decoding="async"
-                            fetchpriority="high"
+                            fetchPriority="high"
                             width="200"
                             height="200"
                         />
@@ -50,9 +50,9 @@ function WhoIAm() {
                         <button type="button" className="btn-cta btn-cta--primary">
                             Télécharger mon CV
                         </button>
-                        <button type="button" className="btn-cta btn-cta--ghost">
+                        <a href="#contact" className="btn-cta btn-cta--ghost">
                             Me contacter
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>

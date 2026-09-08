@@ -44,6 +44,7 @@ const STEPS = [
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+()\d\s.-]{6,32}$/;
 // Strip control chars (sauf \n \r \t) pour bloquer payloads d'injection d'headers
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHARS_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
 function sanitizeInput(raw, maxLength) {
