@@ -148,8 +148,8 @@ const translations = {
             scroll: "Découvrir",
         },
         who: {
-            subtitle: "À propos de moi",
-            title: "Who I am",
+            subtitle: "Présentation",
+            title: "À propos de moi",
             status: "En recherche de stage",
             role: "Étudiant @ Epitech Marseille",
             location: "Marseille, FR",
@@ -174,21 +174,21 @@ const translations = {
         },
         objectives: {
             subtitle: "Vision & Projections",
-            title: "My objectives",
+            title: "Mes objectifs",
             prevLabel: "Objectif précédent",
             nextLabel: "Objectif suivant",
             goTo: "Aller à l'objectif",
         },
         experiences: {
             subtitle: "Parcours & Formations",
-            title: "My experiences",
+            title: "Mes expériences",
             sectionFormations: "Formations & Certifications",
             sectionJobs: "Expériences Professionnelles",
             awardedBadge: "3x Employé du mois",
         },
         projects: {
-            title: "My projects",
-            intro: "Quatre projets perso. Clique pour voir le détail.",
+            title: "Mes projets",
+            intro: "Quatre projets perso. Cliquez pour voir le détail.",
             cta: "Voir le détail →",
         },
         epitechProjects: {
@@ -202,7 +202,7 @@ const translations = {
             mailBodyThanks: "Merci !",
         },
         contact: {
-            title: "Contact Me",
+            title: "Me contacter",
             formTitle: "Écrivez-moi",
             formSubtitle: "Une question, un projet ? Répondez étape par étape.",
             stepLabel: "Étape",
