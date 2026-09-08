@@ -5,12 +5,15 @@ from pydantic_settings import BaseSettings
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 class Settings(BaseSettings):
     APP_NAME: str = "Portfolio API & Analytics"
     API_PORT: int = 5001
     HOST: str = "0.0.0.0"
     DEBUG: bool = False
+    LOG_FILE: str = str(LOG_DIR / "portfolio.log")
 
     # Sécurité & Auth Admin
     SECRET_KEY: str = "portfolio_super_secret_jwt_key_change_me_in_prod_2026"
