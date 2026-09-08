@@ -42,7 +42,7 @@ def get_project_by_slug(
         project = db.query(Project).filter(Project.slug == slug).first()
     if not project:
         log_error("projects.py", "get_project_by_slug", f"Erreur 404 : Projet avec le slug '{slug}' introuvable")
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet introuvable.")
     log_success("projects.py", "get_project_by_slug", f"Projet '{project.title}' (slug: {slug}) chargé avec succès")
     return project
 
@@ -86,7 +86,7 @@ def update_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         log_error("projects.py", "update_project", f"Erreur 404 : Projet ID {project_id} non trouvé pour modification")
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet introuvable.")
     
     update_data = payload.model_dump(exclude_unset=True)
     if "sections" in update_data and update_data["sections"] is not None:
@@ -109,7 +109,7 @@ def delete_project(
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         log_error("projects.py", "delete_project", f"Erreur 404 : Projet ID {project_id} non trouvé pour suppression")
-        raise HTTPException(status_code=404, detail="Projet introuvable.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet introuvable.")
     title = project.title
     db.delete(project)
     db.commit()
@@ -140,7 +140,7 @@ def update_epitech_project(
     project = db.query(EpitechProject).filter(EpitechProject.id == project_id).first()
     if not project:
         log_error("projects.py", "update_epitech_project", f"Erreur 404 : Projet Epitech ID {project_id} non trouvé")
-        raise HTTPException(status_code=404, detail="Projet Epitech introuvable.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet Epitech introuvable.")
     
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(project, key, value)
@@ -159,7 +159,7 @@ def delete_epitech_project(
     project = db.query(EpitechProject).filter(EpitechProject.id == project_id).first()
     if not project:
         log_error("projects.py", "delete_epitech_project", f"Erreur 404 : Projet Epitech ID {project_id} non trouvé")
-        raise HTTPException(status_code=404, detail="Projet Epitech introuvable.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projet Epitech introuvable.")
     name = project.name
     db.delete(project)
     db.commit()

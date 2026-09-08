@@ -69,7 +69,7 @@ def send_contact_message(payload: ContactRequest, request: Request):
 
     if not name or not email or not msg:
         log_error("contact.py", "send_contact_message", f"Rejet du message - Validation échouée (champs requis vides, IP: {client_ip})")
-        raise HTTPException(status_code=400, detail="Tous les champs requis doivent être remplis.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tous les champs requis doivent être remplis.")
 
     is_smtp_ready = bool(
         settings.SMTP_HOST and
@@ -113,7 +113,7 @@ def send_contact_message(payload: ContactRequest, request: Request):
             log_success("contact.py", "send_contact_message", f"Email envoyé avec succès via SMTP de '{name}' <{email}>")
         except Exception as e:
             log_error("contact.py", "send_contact_message", f"Erreur critique lors de l'envoi SMTP: {str(e)}")
-            raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erreur lors de l'envoi de l'email.")
     else:
         log_success("contact.py", "send_contact_message", f"Message local reçu avec succès de '{name}' <{email}> (Tél: {phone})")
 
