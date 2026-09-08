@@ -25,10 +25,10 @@
 
 .App-header-top {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 15px;
 }
 
 .App-header-top h1 {
@@ -36,12 +36,13 @@
     margin: 0;
     text-align: left;
     color: var(--text-strong);
+    line-height: 1.2;
 }
 
 .App-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
@@ -97,18 +98,25 @@
         position: sticky;
         top: 10px;
         z-index: 50;
-        padding: 10px 20px;
+        padding: 12px 18px;
         margin: 10px;
         box-shadow: 0 4px 20px var(--accent-glow);
     }
 
     .App-header-top {
         flex: 1;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
         margin-bottom: 0;
     }
 
     .App-header-top h1 {
-        font-size: 22px;
+        font-size: 20px;
+    }
+
+    .App-header-actions {
+        gap: 8px;
     }
 
     .link-pc {
@@ -122,11 +130,11 @@
 
 @media (max-width: 480px) {
     .App-header-container {
-        padding: 8px 15px;
+        padding: 10px 14px;
         margin: 8px;
     }
 
     .App-header-top h1 {
-        font-size: 18px;
+        font-size: 17px;
     }
 }
