@@ -1,9 +1,8 @@
 import time
-import sys
 import platform
 import threading
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from collections import deque
 from sqlalchemy import text
 from app.database import engine

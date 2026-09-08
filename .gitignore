@@ -29,6 +29,7 @@ yarn-error.log*
 .claude/
 .idea/
 .vscode/
+.pids/
 
 # Python & Backend
 __pycache__/

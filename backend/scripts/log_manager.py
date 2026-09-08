@@ -1,4 +1,3 @@
-import os
 import sys
 import tarfile
 import argparse

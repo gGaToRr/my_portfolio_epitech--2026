@@ -1,5 +1,4 @@
 """Script de peuplement initial (Seed) de la base SQLite."""
-from sqlalchemy.orm import Session
 from app.database import engine, Base, SessionLocal
 from app.models import AdminUser, Project, EpitechProject
 from app.auth import hash_password

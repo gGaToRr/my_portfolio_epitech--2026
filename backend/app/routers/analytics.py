@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models import PageView, AnalyticsEvent, AdminUser
 from app.schemas import PageViewCollect, EventCollect, AnalyticsStatsSummary
 from app.auth import get_current_admin
-from app.logger import log_success, log_error, log_warning, log_interaction
+from app.logger import log_success, log_warning, log_interaction
 
 router = APIRouter(tags=["Analytics"])
 

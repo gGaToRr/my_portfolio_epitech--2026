@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models import AdminUser
-from app.logger import log_error, log_success
+from app.logger import log_error
 
 security = HTTPBearer(auto_error=False)
 

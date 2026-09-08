@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON
 from app.database import Base

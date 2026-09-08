@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Optional
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel
 from app.metrics import metrics_tracker
