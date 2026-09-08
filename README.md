@@ -41,11 +41,26 @@ Les données SQLite sont automatiquement persistées dans le volume `./backend/d
 
 ---
 
+## 📜 Système de Logs Quotidiens & Archivage Mensuel (.tar.gz)
+
+- **Logs Quotidiens** : Générés automatiquement au format `Jour-chiffre-mois.année.log` (ex: `mercredi-09-septembre.2026.log`) dans `backend/logs/`.
+- **Format Strict Coloré** : `[YYYY-MM-DD HH:MM:SS][NOM_DE_FICHIER](FONCTIONS)-----Détail du log` (Vert = Succès/Info, Rouge = Erreurs/Spam/Bruteforce).
+- **Archivage Mensuel Automatisé** :
+  ```bash
+  # Archiver automatiquement le mois écoulé dans backend/logs/archives/logs-mois.année.tar.gz
+  ./backend/scripts/rotate_logs.sh --archive
+  
+  # Voir le statut des logs quotidiens et archives
+  ./backend/scripts/rotate_logs.sh --status
+  ```
+
+---
+
 ## 🛠️ Stack technique
 
 - **Frontend** : React 19, React Router v7, Tokens CSS personnalisés (Thèmes Dark/Light), Vanta.js & Three.js
 - **Backend** : Python 3.11+ / FastAPI, Uvicorn, Pydantic v2, SQLAlchemy 2.0
 - **Base de données** : SQLite (persistance sans configuration)
-- **Sécurité** : JWT (JSON Web Tokens), Hash PBKDF2-SHA256, Protection brute force
-- **Analytics** : Collecte anonymisée RGPD (pages vues, referrers, appareils, clics) sans cookies tiers
+- **Sécurité** : JWT (JSON Web Tokens - 30 min), Hash PBKDF2-SHA256, Protection brute force
+- **Analytics & Logs** : Collecte anonymisée RGPD, rotation quotidienne et archivage mensuel `.tar.gz`
 - **Conteneurisation** : Docker & Docker Compose multi-services

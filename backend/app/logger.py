@@ -37,12 +37,36 @@ class PortfolioLogFormatter(logging.Formatter):
         return f"{color}[{timestamp}][{filename}]({func_name})-----{detail}{reset}"
 
 
+FRENCH_DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+FRENCH_MONTHS = [
+    "", "janvier", "fevrier", "mars", "avril", "mai", "juin",
+    "juillet", "aout", "septembre", "octobre", "novembre", "decembre"
+]
+
+def get_daily_log_filename(dt: Optional[datetime] = None) -> str:
+    """
+    Génère le nom de fichier de log quotidien selon la nomenclature requise :
+    Jour-chiffre-mois.année.log (ex: mercredi-09-septembre.2026.log)
+    """
+    target_dt = dt or datetime.now()
+    day_name = FRENCH_DAYS[target_dt.weekday()]
+    day_num = target_dt.strftime("%d")
+    month_name = FRENCH_MONTHS[target_dt.month]
+    year = target_dt.strftime("%Y")
+    return f"{day_name}-{day_num}-{month_name}.{year}.log"
+
+def get_monthly_archive_filename(year: int, month: int) -> str:
+    """Génère le nom de l'archive mensuelle .tar.gz (ex: logs-septembre.2026.tar.gz)."""
+    month_name = FRENCH_MONTHS[month] if 1 <= month <= 12 else str(month)
+    return f"logs-{month_name}.{year}.tar.gz"
+
+
 def setup_logger(
     name: str = "portfolio_logger",
     log_file: Optional[str] = None,
     use_color: bool = True
 ) -> logging.Logger:
-    """Initialise un logger avec Formatter personnalisé console et fichier .log."""
+    """Initialise un logger avec Formatter personnalisé console et fichier .log quotidien."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
@@ -55,16 +79,22 @@ def setup_logger(
     console_handler.setFormatter(PortfolioLogFormatter(use_color=use_color))
     logger.addHandler(console_handler)
 
-    # Handler Fichier (.log)
-    target_file = log_file or settings.LOG_FILE
+    # Handler Fichier Quotidien (.log)
+    target_file = log_file or str(Path(settings.LOG_FILE).parent / get_daily_log_filename())
     if target_file:
         log_path = Path(target_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         file_handler = logging.FileHandler(str(log_path), encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
-        # Écrit les séquences de couleur dans le fichier .log pour rendu immédiat
         file_handler.setFormatter(PortfolioLogFormatter(use_color=use_color))
         logger.addHandler(file_handler)
+
+        # Si le fichier cible est le fichier quotidien, alimenter également portfolio.log pour faciliter le live tailing
+        if not log_file and target_file != settings.LOG_FILE:
+            main_file_handler = logging.FileHandler(settings.LOG_FILE, encoding="utf-8")
+            main_file_handler.setLevel(logging.DEBUG)
+            main_file_handler.setFormatter(PortfolioLogFormatter(use_color=use_color))
+            logger.addHandler(main_file_handler)
 
     return logger
 
