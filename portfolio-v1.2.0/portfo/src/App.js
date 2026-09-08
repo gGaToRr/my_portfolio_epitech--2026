@@ -1,7 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
-import useVantaBackground from './hooks/useVantaBackground';
 import useTheme from './hooks/useTheme';
 import './App.css';
 
@@ -13,11 +12,11 @@ function PageLoader() {
 
 function App() {
     const [theme, toggleTheme] = useTheme();
-    const vantaBgRef = useVantaBackground(theme);
 
     return (
         <>
-            <div className="vanta-bg" ref={vantaBgRef} />
+            <div className="app-bg-wallpaper" />
+            <div className="app-bg-overlay" />
             <div className="App">
                 <Suspense fallback={<PageLoader />}>
                     <Routes>

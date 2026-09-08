@@ -62,13 +62,36 @@ img {
     height: auto;
 }
 
-/* Layout */
-.vanta-bg {
+/* Background Wallpaper */
+.app-bg-wallpaper {
     position: fixed;
     inset: 0;
     z-index: 0;
-    filter: blur(3px);
-    transform: scale(1.05);
+    background-image: url('./assets/mountain-bg.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    filter: brightness(0.6) contrast(1.05) saturate(1.05);
+    transform: scale(1.02);
+    transition: filter 0.4s ease;
+}
+
+[data-theme="light"] .app-bg-wallpaper {
+    filter: brightness(0.88) contrast(1.0) saturate(0.95);
+}
+
+.app-bg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 60% 40%, rgba(13, 13, 20, 0.4) 0%, rgba(13, 13, 20, 0.85) 100%);
+    transition: var(--transition-theme);
+}
+
+[data-theme="light"] .app-bg-overlay {
+    background: radial-gradient(circle at 60% 40%, rgba(250, 250, 250, 0.45) 0%, rgba(250, 250, 250, 0.88) 100%);
 }
 
 .App {

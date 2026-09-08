@@ -1,6 +1,27 @@
 import { useState } from 'react';
+import { FaGithub, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { sendContactMessage } from '../../utils/sendContactMessage';
 import './Contact.css';
+
+function EpitechLogo({ size = 22 }) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="contact-social-svg"
+            aria-hidden="true"
+        >
+            <rect width="100" height="100" rx="20" fill="currentColor" fillOpacity="0.15" />
+            <path
+                d="M26 26H76V38H40V46H70V58H40V66H76V78H26V26Z"
+                fill="currentColor"
+            />
+        </svg>
+    );
+}
 
 const STEPS = [
     {
@@ -260,13 +281,72 @@ function Contact() {
 
                 <article className="contact-card">
                     <h3 className="contact-card__title">Où me trouver</h3>
-                    <p className="contact-card__subtitle">Code & réseaux</p>
+                    <p className="contact-card__subtitle">Code, réseaux & école</p>
                     <p className="contact-card__body">
-                        Tous mes projets sont sur GitHub
-                        (<a href="https://github.com/gGaToRr" target="_blank" rel="noreferrer">@gGaToRr</a>),
-                        et le plus rapide pour me joindre reste un mail direct via le
-                        formulaire ci-contre. Je réponds sous 24 h en général.
+                        Retrouvez mon profil, mes projets et mes activités :
                     </p>
+
+                    <div className="contact-socials-grid">
+                        <a
+                            href="https://github.com/gGaToRr"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-social-btn"
+                            title="Profil GitHub"
+                        >
+                            <FaGithub className="contact-social-icon" />
+                            <div className="contact-social-text">
+                                <span className="contact-social-title">GitHub</span>
+                                <span className="contact-social-handle">@gGaToRr</span>
+                            </div>
+                            <span className="contact-social-arrow">↗</span>
+                        </a>
+
+                        <a
+                            href="https://www.linkedin.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-social-btn"
+                            title="Profil LinkedIn"
+                        >
+                            <FaLinkedin className="contact-social-icon" />
+                            <div className="contact-social-text">
+                                <span className="contact-social-title">LinkedIn</span>
+                                <span className="contact-social-handle">Pierre Untersinger</span>
+                            </div>
+                            <span className="contact-social-arrow">↗</span>
+                        </a>
+
+                        <a
+                            href="https://www.youtube.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-social-btn"
+                            title="Chaîne YouTube"
+                        >
+                            <FaYoutube className="contact-social-icon" />
+                            <div className="contact-social-text">
+                                <span className="contact-social-title">YouTube</span>
+                                <span className="contact-social-handle">Démos & Tech</span>
+                            </div>
+                            <span className="contact-social-arrow">↗</span>
+                        </a>
+
+                        <a
+                            href="https://www.epitech.eu/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="contact-social-btn"
+                            title="Epitech Marseille"
+                        >
+                            <EpitechLogo size={22} />
+                            <div className="contact-social-text">
+                                <span className="contact-social-title">Epitech</span>
+                                <span className="contact-social-handle">Marseille · Promo 2028</span>
+                            </div>
+                            <span className="contact-social-arrow">↗</span>
+                        </a>
+                    </div>
                 </article>
             </div>
         </section>

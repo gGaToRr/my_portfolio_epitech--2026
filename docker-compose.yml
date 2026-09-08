@@ -1,0 +1,14 @@
+services:
+  portfolio:
+    build:
+      context: ./portfolio-v1.2.0/portfo
+      dockerfile: Dockerfile
+    container_name: pierre_portfolio
+    restart: unless-stopped
+    ports:
+      - "3006:5001"
+    env_file:
+      - ./portfolio-v1.2.0/portfo/.env.local
+    environment:
+      - NODE_ENV=production
+      - API_PORT=5001
