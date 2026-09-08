@@ -1,4 +1,5 @@
 const navLinks = [
+    { name: "Home", href: "#home" },
     { name: "Who I am.", href: "#who" },
     { name: "My objectives", href: "#objectives" },
     { name: "My experiences", href: "#experiences" },

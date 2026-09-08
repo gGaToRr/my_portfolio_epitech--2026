@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Header from '../../components/Header/Header';
 import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import Footer from '../../components/Footer/Footer';
+import Hero from '../../sections/Hero/Hero';
 import WhoIAm from '../../sections/WhoIAm/WhoIAm';
 import Objectives from '../../sections/Objectives/Objectives';
 import Experiences from '../../sections/Experiences/Experiences';
@@ -25,6 +26,7 @@ function Home({ theme, onToggleTheme }) {
             <MobileMenu open={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
 
             <main className="App-Main">
+                <Hero />
                 <WhoIAm />
                 <Objectives />
                 <Experiences />
