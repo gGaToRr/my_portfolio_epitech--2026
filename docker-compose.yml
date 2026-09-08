@@ -1,4 +1,25 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portfolio_backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend/data:/app/data
+    env_file:
+      - path: ./backend/.env.local
+        required: false
+      - path: ./backend/.env
+        required: false
+      - path: ./.env
+        required: false
+    environment:
+      - API_PORT=5001
+      - HOST=0.0.0.0
+
   portfolio:
     build:
       context: ./portfolio-v1.2.0/portfo
@@ -7,6 +28,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT:-3006}:5001"
+    depends_on:
+      - backend
     env_file:
       - path: ./portfolio-v1.2.0/portfo/.env.local
         required: false
@@ -17,3 +40,4 @@ services:
     environment:
       - NODE_ENV=production
       - API_PORT=5001
+
