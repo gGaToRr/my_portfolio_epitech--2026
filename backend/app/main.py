@@ -6,8 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app.seed import seed_db
-from app.routers import auth, projects, analytics, contact
+from app.routers import auth, projects, analytics, contact, status as status_router
 from app.logger import log_success, log_error
+from app.metrics import metrics_tracker
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,14 +22,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Pierre Portfolio API & Analytics",
-    description="Backend léger FastAPI pour la gestion des cartes projets, analytics et contact.",
+    description="Backend léger FastAPI pour la gestion des cartes projets, analytics, uptime et contact.",
     version="1.2.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
 )
 
-# HTTP Request Interaction Logging Middleware
+# HTTP Request Interaction Logging & Metrics Middleware
 @app.middleware("http")
 async def log_http_requests(request: Request, call_next):
     start_time = time.time()
@@ -44,8 +45,13 @@ async def log_http_requests(request: Request, call_next):
         duration_ms = (time.time() - start_time) * 1000
         status_code = response.status_code
 
+        metrics_tracker.record_request(status_code)
+
         msg = f"{method} {path} - Statut {status_code} ({duration_ms:.2f}ms) - IP: {client_ip}"
-        if status_code >= 400:
+        if status_code >= 500:
+            metrics_tracker.record_bug(error_type=f"HTTP_{status_code}", message=f"Erreur serveur {status_code} sur {path}", path=path, client_ip=client_ip)
+            log_error("main.py", "http_middleware", msg)
+        elif status_code >= 400:
             log_error("main.py", "http_middleware", msg)
         else:
             log_success("main.py", "http_middleware", msg)
@@ -53,6 +59,8 @@ async def log_http_requests(request: Request, call_next):
         return response
     except Exception as exc:
         duration_ms = (time.time() - start_time) * 1000
+        metrics_tracker.record_request(500)
+        metrics_tracker.record_bug(error_type=type(exc).__name__, message=str(exc), path=path, client_ip=client_ip)
         log_error("main.py", "http_middleware", f"{method} {path} - Exception 500: {str(exc)} ({duration_ms:.2f}ms) - IP: {client_ip}")
         raise exc
 
@@ -93,6 +101,7 @@ app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(analytics.router)
 app.include_router(contact.router)
+app.include_router(status_router.router)
 
 @app.get("/")
 def root():

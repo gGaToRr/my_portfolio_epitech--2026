@@ -174,3 +174,30 @@ export function logoutAdmin() {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
 }
+
+// ----------------- System Status & Uptime -----------------
+export async function fetchSystemStatus() {
+    return apiRequest('/api/status');
+}
+
+export async function reportBug(errorType, message, path, stack = null) {
+    try {
+        return await apiRequest('/api/bugs/report', {
+            method: 'POST',
+            body: JSON.stringify({
+                error_type: errorType,
+                message: message,
+                path: path || window.location.pathname,
+                stack: stack,
+            }),
+        });
+    } catch (_) {
+        // Silencieux
+    }
+}
+
+export async function clearBugs() {
+    return apiRequest('/api/admin/bugs/clear', {
+        method: 'POST',
+    });
+}

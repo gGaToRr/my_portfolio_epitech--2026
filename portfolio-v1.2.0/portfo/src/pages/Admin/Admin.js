@@ -13,14 +13,20 @@ import {
     createEpitechProject,
     updateEpitechProject,
     deleteEpitechProject,
+    fetchSystemStatus,
+    clearBugs,
 } from '../../services/api';
 import './Admin.css';
 
 export default function Admin() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'projects', 'epitech'
+    const [activeTab, setActiveTab] = useState('analytics'); // 'analytics', 'projects', 'epitech', 'status'
     const [selectedLang, setSelectedLang] = useState('fr');
+
+    // System Status & Uptime State
+    const [systemStatus, setSystemStatus] = useState(null);
+    const [statusLoading, setStatusLoading] = useState(false);
 
     // Login Form State
     const [username, setUsername] = useState('admin');
@@ -94,12 +100,36 @@ export default function Admin() {
         }
     }, [selectedLang]);
 
+    const loadSystemStatus = useCallback(async () => {
+        setStatusLoading(true);
+        try {
+            const data = await fetchSystemStatus();
+            setSystemStatus(data);
+        } catch (err) {
+            showAlert(err.message, 'error');
+        } finally {
+            setStatusLoading(false);
+        }
+    }, []);
+
+    const handleClearBugs = async () => {
+        if (!window.confirm('Voulez-vous vraiment effacer le journal des bugs enregistrés ?')) return;
+        try {
+            await clearBugs();
+            showAlert('Journal des bugs réinitialisé avec succès !');
+            loadSystemStatus();
+        } catch (err) {
+            showAlert(err.message, 'error');
+        }
+    };
+
     useEffect(() => {
         if (!isAuthenticated) return;
         if (activeTab === 'analytics') loadStats();
         if (activeTab === 'projects') loadProjects();
         if (activeTab === 'epitech') loadEpitechProjects();
-    }, [isAuthenticated, activeTab, selectedLang, loadStats, loadProjects, loadEpitechProjects]);
+        if (activeTab === 'status') loadSystemStatus();
+    }, [isAuthenticated, activeTab, selectedLang, loadStats, loadProjects, loadEpitechProjects, loadSystemStatus]);
 
     // Handle Login
     const handleLogin = async (e) => {
@@ -370,6 +400,12 @@ export default function Admin() {
                     onClick={() => setActiveTab('epitech')}
                 >
                     🎓 Projets Epitech ({epitechProjects.length})
+                </button>
+                <button
+                    className={`admin-tab ${activeTab === 'status' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('status')}
+                >
+                    🟢 Statut & Uptime
                 </button>
             </div>
 
@@ -676,6 +712,162 @@ export default function Admin() {
                             </div>
                         ))}
                     </div>
+                </div>
+            )}
+
+            {/* ==========================================
+                TAB 4 : STATUT & UPTIME
+            ========================================== */}
+            {activeTab === 'status' && (
+                <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h2 style={{ fontSize: '1.3rem', color: 'var(--text-strong)' }}>État de santé & Uptime du Serveur</h2>
+                        <button className="admin-btn admin-btn--sm" onClick={loadSystemStatus} disabled={statusLoading}>
+                            {statusLoading ? '…' : '🔄 Actualiser le statut'}
+                        </button>
+                    </div>
+
+                    {systemStatus && (
+                        <>
+                            {/* KPI Grid */}
+                            <div className="admin-stats-grid">
+                                <div className="admin-kpi-card">
+                                    <div className="admin-kpi-card__label">Temps de Fonctionnement (Uptime)</div>
+                                    <div className="admin-kpi-card__value" style={{ color: 'var(--accent)', fontSize: '1.4rem' }}>
+                                        {systemStatus.uptime?.human || '0 secondes'}
+                                    </div>
+                                    <div className="admin-kpi-card__sub">
+                                        Démarré le {systemStatus.uptime?.started_at ? new Date(systemStatus.uptime.started_at).toLocaleString('fr-FR') : '—'}
+                                    </div>
+                                </div>
+
+                                <div className="admin-kpi-card">
+                                    <div className="admin-kpi-card__label">Santé Globale</div>
+                                    <div className="admin-kpi-card__value" style={{ color: systemStatus.status === 'operational' ? '#22c55e' : '#ef4444' }}>
+                                        {systemStatus.status === 'operational' ? '🟢 Opérationnel' : '🔴 Dégradé'}
+                                    </div>
+                                    <div className="admin-kpi-card__sub">
+                                        Taux de succès API : <strong>{systemStatus.metrics?.success_rate_percent ?? 100}%</strong>
+                                    </div>
+                                </div>
+
+                                <div className="admin-kpi-card">
+                                    <div className="admin-kpi-card__label">Base de Données</div>
+                                    <div className="admin-kpi-card__value" style={{ color: systemStatus.database?.status === 'connected' ? '#22c55e' : '#ef4444' }}>
+                                        {systemStatus.database?.status === 'connected' ? '🟢 Connectée' : '🔴 Hors ligne'}
+                                    </div>
+                                    <div className="admin-kpi-card__sub">
+                                        Latence sonde : <strong>{systemStatus.database?.latency_ms ?? 0} ms</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Secondary Metrics */}
+                            <div className="admin-panels-grid" style={{ marginBottom: '24px' }}>
+                                <div className="admin-chart-card">
+                                    <div className="admin-chart-card__title" style={{ marginBottom: '14px' }}>
+                                        📊 Métriques des Requêtes HTTP
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Total des requêtes traitées</span>
+                                            <strong>{systemStatus.metrics?.total_requests ?? 0}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#22c55e' }}>
+                                            <span>Requêtes avec succès (2xx)</span>
+                                            <strong>{systemStatus.metrics?.successful_requests_2xx ?? 0}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#eab308' }}>
+                                            <span>Erreurs client (4xx)</span>
+                                            <strong>{systemStatus.metrics?.error_count_4xx ?? 0}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
+                                            <span>Erreurs serveur (5xx)</span>
+                                            <strong>{systemStatus.metrics?.error_count_5xx ?? 0}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="admin-chart-card">
+                                    <div className="admin-chart-card__title" style={{ marginBottom: '14px' }}>
+                                        ⚙️ Détails de l'Environnement
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Environnement</span>
+                                            <span className="admin-tag">{systemStatus.environment || 'production'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Bugs récents enregistrés</span>
+                                            <strong>{systemStatus.bugs?.total_recorded ?? 0}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>Endpoint public</span>
+                                            <code>/status &amp; /api/status</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bug Tracker Section */}
+                            <div className="admin-chart-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                                    <div className="admin-chart-card__title">
+                                        🐛 Journal des Bugs et Erreurs Récentes ({systemStatus.bugs?.recent_bugs?.length ?? 0})
+                                    </div>
+                                    {systemStatus.bugs?.recent_bugs?.length > 0 && (
+                                        <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={handleClearBugs}>
+                                            🗑️ Vider le journal des bugs
+                                        </button>
+                                    )}
+                                </div>
+
+                                {(!systemStatus.bugs?.recent_bugs || systemStatus.bugs.recent_bugs.length === 0) ? (
+                                    <div style={{ padding: '24px', textAlign: 'center', color: '#22c55e', background: 'rgba(34, 197, 94, 0.08)', borderRadius: '8px' }}>
+                                        ✨ Aucun bug détecté ! Le système fonctionne parfaitement.
+                                    </div>
+                                ) : (
+                                    <table className="admin-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date &amp; Heure</th>
+                                                <th>Type</th>
+                                                <th>Route / Emplacement</th>
+                                                <th>Détails de l'erreur</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {systemStatus.bugs.recent_bugs.map((b, idx) => (
+                                                <tr key={idx}>
+                                                    <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>{b.timestamp}</td>
+                                                    <td>
+                                                        <span className="admin-tag" style={{
+                                                            background: b.error_type === '500_SERVER_ERROR' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)',
+                                                            color: b.error_type === '500_SERVER_ERROR' ? '#ef4444' : '#eab308'
+                                                        }}>
+                                                            {b.error_type}
+                                                        </span>
+                                                    </td>
+                                                    <td><code>{b.path || '—'}</code></td>
+                                                    <td>
+                                                        <div style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{b.message}</div>
+                                                        {b.stack && (
+                                                            <details style={{ marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                                <summary style={{ cursor: 'pointer' }}>Voir trace de pile</summary>
+                                                                <pre style={{ margin: '4px 0 0', padding: '6px', background: 'rgba(0,0,0,0.3)', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
+                                                                    {b.stack}
+                                                                </pre>
+                                                            </details>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 
