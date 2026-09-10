@@ -226,6 +226,11 @@ export async function fetchLiveLogs(lines = 150, filename = null) {
     return apiRequest(`/api/admin/logs/live?${query.toString()}`);
 }
 
+export async function fetchRecentDaysLogs(days = 5, linesPerDay = 200) {
+    const query = new URLSearchParams({ days, lines_per_day: linesPerDay });
+    return apiRequest(`/api/admin/logs/recent-days?${query.toString()}`);
+}
+
 export async function fetchLogsFiles() {
     return apiRequest('/api/admin/logs/files');
 }

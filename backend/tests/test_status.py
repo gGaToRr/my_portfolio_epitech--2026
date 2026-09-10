@@ -85,3 +85,19 @@ def test_smtp_health_probe():
     assert "status" in health
     assert "is_active" in health
     assert "label" in health
+
+def test_get_recent_days_logs_endpoint(client, auth_headers):
+    # Non auth -> 401
+    res_unauth = client.get("/api/admin/logs/recent-days")
+    assert res_unauth.status_code == 401
+
+    # Auth -> 200
+    res_auth = client.get("/api/admin/logs/recent-days?days=5&lines_per_day=50", headers=auth_headers)
+    assert res_auth.status_code == 200
+    data = res_auth.json()
+    assert data["days_count"] == 5
+    assert len(data["days"]) == 5
+    assert "day_index" in data["days"][0]
+    assert "filename" in data["days"][0]
+    assert "label" in data["days"][0]
+

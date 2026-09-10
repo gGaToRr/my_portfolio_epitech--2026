@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, Request, status, Query
@@ -6,7 +7,7 @@ from app.config import settings
 from app.metrics import metrics_tracker
 from app.auth import get_current_admin
 from app.models import AdminUser
-from app.logger import log_success, log_error, get_daily_log_filename
+from app.logger import log_success, log_error, get_daily_log_filename, FRENCH_DAYS
 from scripts.log_manager import list_logs_and_archives, archive_previous_month, create_monthly_archive
 
 router = APIRouter(tags=["Status & Uptime"])
@@ -76,6 +77,65 @@ def get_live_logs(
         }
     except Exception as e:
         return {"filename": target.name, "lines": [f"Erreur lecture logs: {e}"], "total_lines": 0}
+
+@router.get("/api/admin/logs/recent-days")
+def get_recent_days_logs(
+    days: int = Query(5, ge=1, le=14),
+    lines_per_day: int = Query(200, ge=10, le=1000),
+    _: AdminUser = Depends(get_current_admin)
+):
+    """
+    Retourne les logs et métadonnées pour aujourd'hui et les N derniers jours (par défaut 5 jours).
+    Permet un préchargement et une mise en cache fluide côté client.
+    """
+    logs_dir = Path(settings.LOG_FILE).parent
+    now = datetime.now()
+    results = []
+
+    for i in range(days):
+        day_date = now - timedelta(days=i)
+        filename = get_daily_log_filename(day_date)
+        target = logs_dir / filename
+
+        if i == 0:
+            label = f"Aujourd'hui ({day_date.strftime('%d/%m')})"
+        elif i == 1:
+            label = f"Hier ({day_date.strftime('%d/%m')})"
+        else:
+            day_name = FRENCH_DAYS[day_date.weekday()].capitalize()
+            label = f"{day_name} ({day_date.strftime('%d/%m')})"
+
+        file_exists = target.exists()
+        lines = []
+        total_lines = 0
+        size_bytes = 0
+
+        if file_exists:
+            try:
+                with open(target, "r", encoding="utf-8", errors="replace") as f:
+                    all_lines = f.readlines()
+                total_lines = len(all_lines)
+                lines = [l.strip() for l in all_lines[-lines_per_day:] if l.strip()]
+                size_bytes = target.stat().st_size
+            except Exception as e:
+                lines = [f"Erreur lecture {filename}: {e}"]
+
+        results.append({
+            "day_index": i,
+            "date": day_date.strftime("%Y-%m-%d"),
+            "label": label,
+            "filename": filename,
+            "exists": file_exists,
+            "total_lines": total_lines,
+            "size_bytes": size_bytes,
+            "lines": lines
+        })
+
+    return {
+        "days_count": days,
+        "days": results,
+        "server_time": now.isoformat()
+    }
 
 @router.get("/api/admin/logs/files")
 def get_logs_files_list(_: AdminUser = Depends(get_current_admin)):
