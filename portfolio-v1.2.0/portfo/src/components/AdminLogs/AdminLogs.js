@@ -9,11 +9,25 @@ export default function AdminLogs({ onBack }) {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterLevel, setFilterLevel] = useState('all'); // 'all', 'admin', 'errors', 'success'
+    const [selectedMethod, setSelectedMethod] = useState('ALL'); // 'ALL', 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'
+    const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
     const [linesCount, setLinesCount] = useState(200);
+
     const consoleEndRef = useRef(null);
+    const methodDropdownRef = useRef(null);
+
+    // Fermeture du dropdown de méthode au clic à l'extérieur
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (methodDropdownRef.current && !methodDropdownRef.current.contains(e.target)) {
+                setIsMethodDropdownOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Cache mémoire pour stocker les logs par fichier/jour
-    // Clé: filename -> { filename, label, date, lines, total_lines, size_bytes, cachedAt }
     const logsCacheRef = useRef({});
 
     // Chargement initial des 5 jours (Aujourd'hui + 4 précédents) en cache
@@ -103,7 +117,6 @@ export default function AdminLogs({ onBack }) {
     // Calcul des logs actifs selon le jour sélectionné (Depuis le cache mémoire)
     const activeLogs = useMemo(() => {
         if (selectedDayKey === 'all') {
-            // Regroupe les logs des 5 jours en cache
             const all = [];
             days.forEach((d) => {
                 const cached = logsCacheRef.current[d.filename];
@@ -118,17 +131,25 @@ export default function AdminLogs({ onBack }) {
         return cached && Array.isArray(cached.lines) ? cached.lines : [];
     }, [selectedDayKey, days]);
 
-    // Filtres dynamiques (Recherche + Niveau)
+    // Filtres dynamiques (Recherche + Niveau + Méthode HTTP)
     const filteredLogs = useMemo(() => {
         return activeLogs.filter((line) => {
             const lower = line.toLowerCase();
+            const upper = line.toUpperCase();
 
             // 1. Filtre de recherche textuelle
             if (searchTerm && !lower.includes(searchTerm.toLowerCase())) {
                 return false;
             }
 
-            // 2. Filtre de catégorie / niveau
+            // 2. Filtre par méthode HTTP (Custom Dropdown)
+            if (selectedMethod !== 'ALL') {
+                if (!upper.includes(`${selectedMethod} /`) && !upper.includes(`${selectedMethod} `)) {
+                    return false;
+                }
+            }
+
+            // 3. Filtre de catégorie / niveau
             if (filterLevel === 'errors') {
                 return (
                     lower.includes('statut 401') ||
@@ -157,7 +178,7 @@ export default function AdminLogs({ onBack }) {
 
             return true;
         });
-    }, [activeLogs, searchTerm, filterLevel]);
+    }, [activeLogs, searchTerm, filterLevel, selectedMethod]);
 
     // Auto-scroll vers le bas lors de l'arrivée de nouveaux logs
     useEffect(() => {
@@ -201,7 +222,7 @@ export default function AdminLogs({ onBack }) {
         <div className="admin-logs-view">
             {/* 1. Bandeau supérieur séparé (Titre, Jours en cache, Filtres & Recherche) */}
             <div className="admin-logs-toolbar-card">
-                {/* En-tête */}
+                {/* En-tête sans emojis avec typographie agrandie */}
                 <div className="admin-logs-header">
                     <div className="admin-logs-title-box">
                         {onBack && (
@@ -211,10 +232,10 @@ export default function AdminLogs({ onBack }) {
                         )}
                         <h2 className="admin-logs-title">Logs & Sécurité du serveur</h2>
                         <span className="admin-logs-badge">
-                            {filteredLogs.length} lignes affichées
+                            {filteredLogs.length} logs affichés
                         </span>
                         <span className="admin-logs-cache-badge">
-                            ⚡ Cache 5 jours ({totalCachedLines} lignes)
+                            Cache 5 jours ({totalCachedLines} lignes)
                         </span>
                     </div>
 
@@ -224,7 +245,7 @@ export default function AdminLogs({ onBack }) {
                         onClick={() => loadAllRecentLogs(false)}
                         disabled={loading}
                     >
-                        {loading ? 'Chargement…' : '🔄 Actualiser cache'}
+                        {loading ? 'Chargement…' : 'Actualiser'}
                     </button>
                 </div>
 
@@ -253,13 +274,13 @@ export default function AdminLogs({ onBack }) {
                     ))}
                 </div>
 
-                {/* Barre d'outils (Recherche, filtres de statut, sélecteur de volume) */}
+                {/* Barre d'outils (Recherche, filtres rapides, dropdown méthode HTTP custom, sélecteur de volume) */}
                 <div className="admin-logs-toolbar">
                     <div className="admin-logs-search-box">
                         <input
                             type="text"
                             className="admin-logs-search-input"
-                            placeholder="Rechercher une IP, une route, un statut..."
+                            placeholder="Rechercher une IP, une route, un statut, un message..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -294,6 +315,89 @@ export default function AdminLogs({ onBack }) {
                         >
                             Succès 200
                         </button>
+
+                        {/* Dropdown customisé pour la sélection de la méthode HTTP */}
+                        <div className="admin-logs-dropdown-wrapper" ref={methodDropdownRef}>
+                            <button
+                                type="button"
+                                className={`admin-logs-filter-btn admin-logs-dropdown-btn ${selectedMethod !== 'ALL' ? 'is-active' : ''}`}
+                                onClick={() => setIsMethodDropdownOpen((prev) => !prev)}
+                            >
+                                <span>Méthode : {selectedMethod === 'ALL' ? 'Toutes' : selectedMethod}</span>
+                                <span className={`admin-logs-dropdown-caret ${isMethodDropdownOpen ? 'is-open' : ''}`}>▾</span>
+                            </button>
+                            {isMethodDropdownOpen && (
+                                <div className="admin-logs-dropdown-menu">
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'ALL' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('ALL');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--all">ALL</span>
+                                        <span>Toutes les méthodes</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'GET' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('GET');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--get">GET</span>
+                                        <span>Lecture & Consultations</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'POST' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('POST');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--post">POST</span>
+                                        <span>Créations & Actions</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'PUT' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('PUT');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--put">PUT</span>
+                                        <span>Mises à jour</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'DELETE' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('DELETE');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--delete">DELETE</span>
+                                        <span>Suppressions</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`admin-logs-dropdown-item ${selectedMethod === 'OPTIONS' ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedMethod('OPTIONS');
+                                            setIsMethodDropdownOpen(false);
+                                        }}
+                                    >
+                                        <span className="method-tag method-tag--options">OPTIONS</span>
+                                        <span>Pré-vols CORS</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <select
                             className="admin-logs-filter-btn"
                             value={linesCount}
@@ -332,4 +436,5 @@ export default function AdminLogs({ onBack }) {
         </div>
     );
 }
+
 
