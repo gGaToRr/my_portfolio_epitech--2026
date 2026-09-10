@@ -92,6 +92,57 @@
     transition: color 0.25s ease;
 }
 
+/* Couleurs des gros textes pour les 4 cartes */
+.admin-info-card--visitors .admin-info-card__value {
+    color: #60a5fa;
+}
+
+.admin-info-card--cv .admin-info-card__value {
+    color: #f472b6;
+}
+
+.admin-info-card--projects .admin-info-card__value {
+    color: #fbbf24;
+}
+
+/* Carte 4 : Couleur adaptative du gros texte selon l'état des logs */
+.admin-info-card--healthy .admin-info-card__value {
+    color: #10b981;
+}
+
+.admin-info-card--warning .admin-info-card__value {
+    color: #f59e0b;
+}
+
+.admin-info-card--danger .admin-info-card__value {
+    color: #ef4444;
+}
+
+/* Thème clair - Couleurs contrastées */
+[data-theme="light"] .admin-info-card--visitors .admin-info-card__value {
+    color: #2563eb;
+}
+
+[data-theme="light"] .admin-info-card--cv .admin-info-card__value {
+    color: #db2777;
+}
+
+[data-theme="light"] .admin-info-card--projects .admin-info-card__value {
+    color: #d97706;
+}
+
+[data-theme="light"] .admin-info-card--healthy .admin-info-card__value {
+    color: #059669;
+}
+
+[data-theme="light"] .admin-info-card--warning .admin-info-card__value {
+    color: #d97706;
+}
+
+[data-theme="light"] .admin-info-card--danger .admin-info-card__value {
+    color: #dc2626;
+}
+
 .admin-info-card__unit {
     font-size: 0.85rem;
     font-weight: 600;

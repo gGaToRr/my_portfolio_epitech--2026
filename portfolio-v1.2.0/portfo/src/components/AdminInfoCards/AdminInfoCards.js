@@ -8,35 +8,11 @@ import {
 } from '../../services/api';
 import './AdminInfoCards.css';
 
-function parseAnomalyLog(rawLine) {
-    const cleaned = rawLine.replace(/\[\d+m/g, '').trim();
-    const match = cleaned.match(/^\[([^\]]+)\]\[([^\]]+)\](?:\(([^)]*)\))?-----(.+)$/);
-    if (match) {
-        const fullTime = match[1];
-        const timePart = fullTime.includes(' ') ? fullTime.split(' ')[1] : fullTime;
-        const source = match[2];
-        const detail = match[4].trim();
-        return {
-            time: timePart.substring(0, 5),
-            source: source,
-            message: detail,
-            raw: cleaned,
-        };
-    }
-    return {
-        time: '',
-        source: 'Log',
-        message: cleaned,
-        raw: cleaned,
-    };
-}
-
 export default function AdminInfoCards({ customCards }) {
     const [analytics, setAnalytics] = useState(null);
     const [persoProjectsCount, setPersoProjectsCount] = useState(null);
     const [epitechProjectsCount, setEpitechProjectsCount] = useState(null);
     const [anomaliesCount, setAnomaliesCount] = useState(0);
-    const [latestAnomalies, setLatestAnomalies] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -67,8 +43,7 @@ export default function AdminInfoCards({ customCards }) {
                     setEpitechProjectsCount(epitechData.value.length);
                 }
 
-                // 4. Extraction et comptage précis des 3 dernières anomalies
-                let parsedAnomalies = [];
+                // 4. Extraction et comptage précis des anomalies
                 let totalLogAnomalies = 0;
 
                 if (logsData.status === 'fulfilled' && logsData.value?.lines) {
@@ -90,7 +65,6 @@ export default function AdminInfoCards({ customCards }) {
                     });
 
                     totalLogAnomalies = anomalyLines.length;
-                    parsedAnomalies = anomalyLines.slice(-3).reverse().map(parseAnomalyLog);
                 }
 
                 let recordedBugs = 0;
@@ -101,7 +75,6 @@ export default function AdminInfoCards({ customCards }) {
 
                 const totalCalculated = Math.max(totalLogAnomalies, recordedBugs);
                 setAnomaliesCount(totalCalculated);
-                setLatestAnomalies(parsedAnomalies.slice(0, 3));
             } catch (err) {
                 console.warn('[AdminInfoCards] Erreur de chargement des métriques :', err.message);
             } finally {
@@ -185,13 +158,11 @@ export default function AdminInfoCards({ customCards }) {
         logSubtitle = `${anomaliesCount} anomalies • 3 plus récentes`;
     }
 
-    const logItems = (anomaliesCount > 0 && latestAnomalies.length > 0)
-        ? latestAnomalies
-        : [
-            { time: 'Live', source: 'FastAPI', message: 'Opérationnel • 0 anomalie' },
-            { time: 'Live', source: 'SQLite DB', message: 'Connectée • Latence 0.4ms' },
-            { time: 'Live', source: 'Logs', message: 'Flux nominal • Sans alerte' },
-        ];
+    const logItems = [
+        { source: 'Santé système', message: anomaliesCount === 0 ? 'Optimale (0 incident)' : `${anomaliesCount} anomalie${anomaliesCount > 1 ? 's' : ''}` },
+        { source: 'Serveur API', message: anomaliesCount === 0 ? 'Opérationnel' : 'Vérification requise' },
+        { source: 'Télémétrie', message: 'Surveillance active' },
+    ];
 
     // Mini rangées structurées et harmonisées pour les 4 cartes
     const visitorItems = [
