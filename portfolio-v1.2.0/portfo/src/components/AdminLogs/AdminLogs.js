@@ -199,7 +199,8 @@ export default function AdminLogs({ onBack }) {
 
     return (
         <div className="admin-logs-view">
-            <div className="admin-logs-card">
+            {/* 1. Bandeau supérieur séparé (Titre, Jours en cache, Filtres & Recherche) */}
+            <div className="admin-logs-toolbar-card">
                 {/* En-tête */}
                 <div className="admin-logs-header">
                     <div className="admin-logs-title-box">
@@ -306,8 +307,10 @@ export default function AdminLogs({ onBack }) {
                         </select>
                     </div>
                 </div>
+            </div>
 
-                {/* Console de logs */}
+            {/* 2. Card inférieure dédiée exclusivement à la console des logs */}
+            <div className="admin-logs-console-card">
                 <div className="admin-logs-console">
                     {filteredLogs.length === 0 ? (
                         <div className="admin-logs-empty">
