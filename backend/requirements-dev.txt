@@ -1,0 +1,5 @@
+# Dépendances de développement et de test uniquement.
+-r requirements.txt
+
+pytest>=8.0.0
+httpx>=0.28.0   # requis par fastapi.testclient

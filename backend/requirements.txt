@@ -1,11 +1,14 @@
+# Dépendances d'exécution du backend FastAPI.
 fastapi>=0.141.0
 uvicorn[standard]>=0.52.0
 sqlalchemy>=2.0.50
 pydantic>=2.13.0
 pydantic-settings>=2.15.0
 python-jose[cryptography]>=3.5.0
-passlib[bcrypt]>=1.7.4
-python-multipart>=0.0.30
-requests>=2.34.0
-httpx>=0.28.0
-pytest>=8.0.0
+
+# Retirés car jamais importés :
+#   passlib[bcrypt]     -> le hachage utilise hashlib.pbkdf2_hmac (app/auth.py)
+#   python-multipart    -> aucun formulaire multipart, tout passe en JSON
+#   requests            -> aucun appel HTTP sortant côté backend
+# Les outils de test sont désormais dans requirements-dev.txt et ne sont plus
+# installés dans l'image de production.
