@@ -1,7 +1,8 @@
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, Request, Header
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Header
+from fastapi.responses import Response
 from sqlalchemy import func, distinct, desc
 from sqlalchemy.orm import Session
 
@@ -12,6 +13,8 @@ from app.schemas import PageViewCollect, EventCollect, AnalyticsStatsSummary
 from app.auth import get_current_admin
 from app.logger import log_success, log_warning, log_interaction
 from app.security import get_client_ip, public_write_limiter, sanitize_log_value
+from app import analytics_queries as aq
+from app import charts
 
 router = APIRouter(tags=["Analytics"])
 
@@ -109,6 +112,8 @@ def collect_pageview(
         browser=ua_info["browser"],
         os=ua_info["os"],
         language=payload.language[:20] if payload.language else None,
+        viewport_width=payload.viewport_width,
+        timezone=sanitize_log_value(payload.timezone, 64) if payload.timezone else None,
     )
     db.add(view)
     db.commit()
@@ -289,3 +294,116 @@ def get_analytics_stats(
         "views_per_day": daily_stats,
         "recent_cv_downloads": recent_cv_downloads,
     }
+
+
+# =========================================================================
+# ÉCRAN ANALYTICS : chiffres et graphiques
+# =========================================================================
+
+# Graphiques disponibles. Le nom demandé est validé contre ce dictionnaire :
+# il sert d'aiguillage, jamais de chemin ni d'appel dynamique.
+GRAPHIQUES = (
+    "trafic",
+    "heures",
+    "pages",
+    "sources",
+    "technologies",
+    "ecrans",
+)
+
+
+@router.get("/api/admin/analytics/overview")
+def get_analytics_overview(
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    """
+    Chiffres bruts de l'écran Analytics.
+
+    Servis à côté des graphiques pour que chaque figure soit doublée de ses
+    valeurs : une image rendue côté serveur ne se survole pas, le tableau reste
+    donc le seul moyen de lire une valeur précise — et le seul lisible par un
+    lecteur d'écran.
+    """
+    log_success("analytics.py", "get_analytics_overview",
+                f"Écran Analytics consulté ({days} jours) par '{admin.username}'")
+
+    libelles, vues, visiteurs = aq.serie_quotidienne(db, days)
+    return {
+        "totaux": aq.totaux(db, days),
+        "trafic": [
+            {"date": libelles[i], "vues": vues[i], "visiteurs": visiteurs[i]}
+            for i in range(len(libelles))
+        ],
+        "pages": [{"libelle": l, "valeur": v} for l, v in aq.top_pages(db, days)],
+        "sources": [{"libelle": l, "valeur": v} for l, v in aq.top_sources(db, days)],
+        "navigateurs": [{"libelle": l, "valeur": v} for l, v in aq.top_navigateurs(db, days)],
+        "systemes": [{"libelle": l, "valeur": v} for l, v in aq.top_systemes(db, days)],
+        "fuseaux": [{"libelle": l, "valeur": v} for l, v in aq.top_fuseaux(db, days)],
+        "ecrans": [
+            {"libelle": l, "valeur": v}
+            for l, v in charts.repartir_largeurs(aq.largeurs_ecran(db, days))
+        ],
+        "evenements": [{"libelle": l, "valeur": v} for l, v in aq.evenements(db, days)],
+        "graphiques": list(GRAPHIQUES),
+    }
+
+
+@router.get("/api/admin/analytics/chart/{nom}")
+def get_analytics_chart(
+    nom: str,
+    days: int = Query(30, ge=1, le=365),
+    theme: str = Query("light", pattern="^(light|dark)$"),
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin),
+):
+    """
+    Rend un graphique en SVG.
+
+    Le thème est passé par la page : une figure produite côté serveur ne peut
+    pas suivre le thème du lecteur toute seule.
+    """
+    if nom not in GRAPHIQUES:
+        raise HTTPException(status_code=404, detail="Graphique inconnu.")
+
+    if nom == "trafic":
+        libelles, vues, visiteurs = aq.serie_quotidienne(db, days)
+        svg = charts.chart_trafic_quotidien(libelles, vues, visiteurs, theme)
+
+    elif nom == "heures":
+        svg = charts.chart_heures_affluence(aq.matrice_horaire(db, days), theme)
+
+    elif nom == "pages":
+        donnees = aq.top_pages(db, days)
+        svg = charts.chart_barres_horizontales(
+            [d[0] for d in donnees], [d[1] for d in donnees], theme,
+            message_vide="Aucune page consultée sur la période",
+        )
+
+    elif nom == "sources":
+        donnees = aq.top_sources(db, days)
+        svg = charts.chart_barres_horizontales(
+            [d[0] for d in donnees], [d[1] for d in donnees], theme,
+            message_vide="Aucune source de trafic sur la période",
+        )
+
+    elif nom == "technologies":
+        svg = charts.chart_technologies(
+            aq.top_navigateurs(db, days), aq.top_systemes(db, days), theme
+        )
+
+    else:  # "ecrans"
+        svg = charts.chart_largeurs_ecran(
+            charts.repartir_largeurs(aq.largeurs_ecran(db, days)), theme
+        )
+
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={
+            # Les données changent en continu : jamais de cache navigateur.
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'inline; filename="{nom}.svg"',
+        },
+    )
