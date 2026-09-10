@@ -150,10 +150,10 @@
 
 /* Zone de contenu principale de l'admin (0 scroll) */
 .admin-main-canvas {
-    padding: 14px 24px;
-    height: calc(100vh - 65px);
-    max-height: calc(100vh - 65px);
-    min-height: 0 !important;
+    padding: 20px 20px 20px 0;
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 100vh;
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
@@ -162,8 +162,12 @@
 }
 
 .admin-main-canvas.App-Main {
-    min-height: 0 !important;
-    padding: 14px 24px !important;
+    padding: 20px 20px 20px 0 !important;
+    min-height: 100vh !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
 }
 
 .admin-page-view {
@@ -186,7 +190,7 @@
     flex-direction: column;
     overflow: hidden;
     margin-bottom: 0 !important;
-    gap: 12px;
+    gap: 14px;
 }
 
 /* Collapsible Game Card - Disparition automatique fluide quand System Status est déplié sans perte de données */

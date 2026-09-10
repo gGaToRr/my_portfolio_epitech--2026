@@ -10,33 +10,13 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    background: var(--surface-strong);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 12px 18px 8px;
+    background: transparent;
+    border: none;
+    padding: 0;
     margin-bottom: 0;
     position: relative;
     overflow: hidden;
     user-select: none;
-    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    transition: var(--transition-theme), border-color 0.25s ease, box-shadow 0.25s ease;
-}
-
-.admin-pixel-pet-card:hover {
-    border-color: var(--border-strong);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
-}
-
-[data-theme="light"] .admin-pixel-pet-card {
-    background: rgba(255, 255, 255, 0.96);
-    border-color: rgba(148, 163, 184, 0.35);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
-}
-
-[data-theme="light"] .admin-pixel-pet-card:hover {
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
 }
 
 /* En-tête de la carte : Score en haut à gauche, Boutons en haut à droite */
@@ -224,9 +204,8 @@
     overflow: hidden;
     display: flex;
     align-items: stretch;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: none;
 }
 
 .admin-pixel-pet-canvas {
