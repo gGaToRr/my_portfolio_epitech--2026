@@ -402,3 +402,48 @@ def test_app_only_imports_packaged_modules():
         assert f"COPY {package} ./{package}" in dockerfile, (
             f"le paquet '{package}' est importé par app/ mais absent du Dockerfile"
         )
+
+
+# ---------------------------------------------------------------------------
+# Migrations additives
+# ---------------------------------------------------------------------------
+
+def test_additive_migration_adds_missing_columns(tmp_path):
+    """
+    create_all() ne touche pas aux tables existantes : une colonne ajoutée au
+    modèle n'apparaît pas sur une base déjà en production, et la première
+    requête échoue sur "no such column".
+    """
+    from sqlalchemy import create_engine, inspect, text
+
+    from app.migrations import ADDITIVE_COLUMNS, run_additive_migrations
+
+    moteur = create_engine(f"sqlite:///{tmp_path/'ancienne.db'}")
+
+    # Table telle qu'elle existait avant l'ajout des colonnes.
+    with moteur.begin() as connexion:
+        connexion.execute(text(
+            "CREATE TABLE page_views ("
+            " id INTEGER PRIMARY KEY, path VARCHAR(255),"
+            " visitor_hash VARCHAR(64), timestamp DATETIME)"
+        ))
+
+    appliquees = run_additive_migrations(moteur)
+    assert "page_views.viewport_width" in appliquees
+    assert "page_views.timezone" in appliquees
+
+    colonnes = {c["name"] for c in inspect(moteur).get_columns("page_views")}
+    for nom, _ in ADDITIVE_COLUMNS["page_views"]:
+        assert nom in colonnes
+
+    # Idempotence : rejouée à chaque démarrage, la migration ne doit rien refaire.
+    assert run_additive_migrations(moteur) == []
+
+
+def test_additive_migration_ignores_absent_tables(tmp_path):
+    """Sur une base vierge, create_all() fera le travail : rien à migrer."""
+    from sqlalchemy import create_engine
+    from app.migrations import run_additive_migrations
+
+    moteur = create_engine(f"sqlite:///{tmp_path/'vide.db'}")
+    assert run_additive_migrations(moteur) == []
