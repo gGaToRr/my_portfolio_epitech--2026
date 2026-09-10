@@ -8,12 +8,26 @@ import './Header.css';
 
 const SECTION_IDS = ['home', 'who', 'objectives', 'experiences', 'projects', 'epitech-projects', 'contact'];
 
-function Header({ isMenuOpen, onOpenMenu, theme, onToggleTheme }) {
+function Header({
+    isMenuOpen,
+    onOpenMenu,
+    theme,
+    onToggleTheme,
+    customLinks,
+    activeId,
+    onItemClick,
+    title = "Pierre Untersinger",
+    subtitle,
+    footerNode,
+}) {
     const { lang, toggleLang } = useLanguage();
-    const links = getNavLinks(lang);
+    const defaultLinks = getNavLinks(lang);
+    const links = customLinks || defaultLinks;
     const [activeSection, setActiveSection] = useState('home');
 
     useEffect(() => {
+        if (customLinks) return;
+
         const handleScroll = () => {
             const scrollY = window.scrollY;
             let current = 'home';
@@ -42,9 +56,21 @@ function Header({ isMenuOpen, onOpenMenu, theme, onToggleTheme }) {
         handleScroll();
 
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [customLinks]);
 
-    const handleNavClick = (e, href) => {
+    const handleNavClick = (e, link) => {
+        if (customLinks) {
+            if (link.onClick) {
+                e.preventDefault();
+                link.onClick();
+            } else if (onItemClick) {
+                e.preventDefault();
+                onItemClick(link.id || link.href);
+            }
+            return;
+        }
+
+        const href = link.href || '';
         if (href.startsWith('#')) {
             const targetId = href.substring(1);
             const targetEl = document.getElementById(targetId);
@@ -61,7 +87,14 @@ function Header({ isMenuOpen, onOpenMenu, theme, onToggleTheme }) {
         <header className="App-header">
             <div className={`App-header-container ${isMenuOpen ? 'clicked' : ''}`}>
                 <div className="App-header-top">
-                    <h1>Pierre Untersinger</h1>
+                    <div>
+                        <h1>{title}</h1>
+                        {subtitle && (
+                            <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: 600, letterSpacing: '0.02em', display: 'block', marginTop: '4px' }}>
+                                {subtitle}
+                            </span>
+                        )}
+                    </div>
                     <div className="App-header-actions">
                         <LanguageToggle lang={lang} onToggle={toggleLang} />
                         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
@@ -70,25 +103,32 @@ function Header({ isMenuOpen, onOpenMenu, theme, onToggleTheme }) {
 
                 <nav className="link-pc">
                     {links.map((link) => {
-                        const targetId = link.href.replace('#', '');
-                        const isActive = activeSection === targetId;
+                        const targetId = link.id || (link.href ? link.href.replace('#', '') : link.name);
+                        const isActive = customLinks ? activeId === targetId : activeSection === targetId;
 
                         return (
                             <a
-                                key={link.href}
-                                href={link.href}
-                                onClick={(e) => handleNavClick(e, link.href)}
+                                key={link.id || link.href || link.name}
+                                href={link.href || '#'}
+                                onClick={(e) => handleNavClick(e, link)}
                             >
                                 <button
                                     type="button"
                                     className={isActive ? 'is-active' : ''}
                                 >
+                                    {link.icon && <span style={{ marginRight: '10px' }}>{link.icon}</span>}
                                     {link.name}
                                 </button>
                             </a>
                         );
                     })}
                 </nav>
+
+                {footerNode && (
+                    <div className="App-header-footer" style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                        {footerNode}
+                    </div>
+                )}
 
                 <button type="button" onClick={onOpenMenu} className="hamburger-button" aria-label="Ouvrir le menu">
                     <img className="App-header-img" src={burgerIcon} alt="" />

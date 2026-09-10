@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FaDownload, FaPaperPlane, FaMapMarkerAlt, FaServer, FaShieldAlt } from 'react-icons/fa';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../data/translations';
+import { trackEvent } from '../../services/api';
 import SkillIcons from './SkillIcons';
 import CvModal from '../../components/CvModal/CvModal';
 import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
@@ -15,6 +16,8 @@ function WhoIAm() {
     const [isCvModalOpen, setIsCvModalOpen] = useState(false);
 
     const handleDownloadCv = () => {
+        trackEvent('download_cv', 'CV_PIERRE_UNTERSINGER.pdf', { format: 'pdf' });
+
         const link = document.createElement('a');
         link.href = '/CV_PIERRE_UNTERSINGER.pdf';
         link.download = 'CV_PIERRE_UNTERSINGER.pdf';

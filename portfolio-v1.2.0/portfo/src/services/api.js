@@ -201,3 +201,42 @@ export async function clearBugs() {
         method: 'POST',
     });
 }
+
+// ----------------- Messages de Contact Admin -----------------
+export async function fetchContactMessages() {
+    return apiRequest('/api/admin/messages');
+}
+
+export async function toggleMessageRead(messageId) {
+    return apiRequest(`/api/admin/messages/${messageId}/read`, {
+        method: 'PATCH',
+    });
+}
+
+export async function deleteContactMessage(messageId) {
+    return apiRequest(`/api/admin/messages/${messageId}`, {
+        method: 'DELETE',
+    });
+}
+
+// ----------------- Logs Console Admin -----------------
+export async function fetchLiveLogs(lines = 150, filename = null) {
+    const query = new URLSearchParams({ lines });
+    if (filename) query.set('filename', filename);
+    return apiRequest(`/api/admin/logs/live?${query.toString()}`);
+}
+
+export async function fetchLogsFiles() {
+    return apiRequest('/api/admin/logs/files');
+}
+
+export async function triggerLogArchive(year = null, month = null) {
+    const query = new URLSearchParams();
+    if (year) query.set('year', year);
+    if (month) query.set('month', month);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return apiRequest(`/api/admin/logs/archive${queryString}`, {
+        method: 'POST',
+    });
+}
+
