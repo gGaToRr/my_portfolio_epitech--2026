@@ -1,5 +1,6 @@
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -61,6 +62,25 @@ def get_monthly_archive_filename(year: int, month: int) -> str:
     return f"logs-{month_name}.{year}.tar.gz"
 
 
+def _build_file_handler(path: str) -> logging.Handler:
+    """
+    Handler fichier avec rotation par taille.
+
+    portfolio.log est explicitement exclu de l'archivage mensuel
+    (log_manager.find_logs_for_month) : sans rotation, rien ne le tronquait
+    jamais et il grossissait tant que le serveur tournait.
+    """
+    handler = RotatingFileHandler(
+        path,
+        maxBytes=settings.LOG_MAX_BYTES,
+        backupCount=settings.LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(PortfolioLogFormatter(use_color=False))
+    return handler
+
+
 def setup_logger(
     name: str = "portfolio_logger",
     log_file: Optional[str] = None,
@@ -80,21 +100,20 @@ def setup_logger(
     logger.addHandler(console_handler)
 
     # Handler Fichier Quotidien (.log)
+    # use_color=False sur les handlers fichier : la couleur ANSI n'a de sens que
+    # sur un terminal. Écrite dans le .log, elle obligeait le panel admin à
+    # nettoyer chaque ligne à l'affichage, et faisait dépendre les filtres
+    # d'erreur d'un artefact de présentation ("[91m").
     target_file = log_file or str(Path(settings.LOG_FILE).parent / get_daily_log_filename())
     if target_file:
         log_path = Path(target_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        file_handler = logging.FileHandler(str(log_path), encoding="utf-8")
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(PortfolioLogFormatter(use_color=use_color))
+        file_handler = _build_file_handler(str(log_path))
         logger.addHandler(file_handler)
 
         # Si le fichier cible est le fichier quotidien, alimenter également portfolio.log pour faciliter le live tailing
         if not log_file and target_file != settings.LOG_FILE:
-            main_file_handler = logging.FileHandler(settings.LOG_FILE, encoding="utf-8")
-            main_file_handler.setLevel(logging.DEBUG)
-            main_file_handler.setFormatter(PortfolioLogFormatter(use_color=use_color))
-            logger.addHandler(main_file_handler)
+            logger.addHandler(_build_file_handler(settings.LOG_FILE))
 
     return logger
 

@@ -1,3 +1,4 @@
+import re
 import sys
 import tarfile
 import argparse
@@ -30,20 +31,40 @@ def get_archives_directory(custom_dir: Optional[str] = None) -> Path:
     target.mkdir(parents=True, exist_ok=True)
     return target
 
+# Nom de log quotidien : jour-JJ-mois.AAAA.log (ex: mercredi-09-septembre.2026.log)
+DAILY_LOG_RE = re.compile(
+    r"^(?P<day_name>[a-z]+)-(?P<day_num>\d{2})-(?P<month_name>[a-z]+)\.(?P<year>\d{4})\.log$"
+)
+
 def find_logs_for_month(logs_dir: Path, year: int, month: int) -> List[Path]:
-    """Recherche tous les fichiers .log correspondant au mois et à l'année donnés."""
-    month_name = FRENCH_MONTHS[month] if 1 <= month <= 12 else str(month)
-    month_str_num = f"{month:02d}"
+    """
+    Recherche les fichiers .log du mois et de l'année donnés.
+
+    L'ancienne version cherchait des sous-chaînes, dont `f"-{mois:02d}-"`. Or
+    dans `mercredi-09-septembre.2026.log`, le nombre encadré de tirets est le
+    *jour*, pas le mois : archiver le mois 09 sélectionnait donc aussi tous les
+    fichiers du 9 des autres mois — qui étaient ensuite compressés dans la
+    mauvaise archive puis supprimés (delete_archived vaut True par défaut).
+
+    On analyse maintenant le nom de fichier avec une expression régulière et on
+    compare le nom de mois et l'année de façon exacte.
+    """
+    if not 1 <= month <= 12:
+        log_warning("log_manager.py", "find_logs_for_month", f"Mois invalide ignoré : {month}")
+        return []
+
+    month_name = FRENCH_MONTHS[month]
     year_str = str(year)
-    
+
     found = []
     for p in logs_dir.glob("*.log"):
-        fname = p.name.lower()
-        # Ne pas archiver portfolio.log générique live
-        if fname == "portfolio.log":
+        # portfolio.log est le fichier de tail live, jamais archivé.
+        if p.name.lower() == "portfolio.log":
             continue
-        # Correspondance par nom de mois ou numéro de mois et année
-        if (month_name in fname or f"-{month_str_num}-" in fname or f".{month_str_num}." in fname) and year_str in fname:
+        match = DAILY_LOG_RE.match(p.name.lower())
+        if not match:
+            continue
+        if match.group("month_name") == month_name and match.group("year") == year_str:
             found.append(p)
     return sorted(found)
 
