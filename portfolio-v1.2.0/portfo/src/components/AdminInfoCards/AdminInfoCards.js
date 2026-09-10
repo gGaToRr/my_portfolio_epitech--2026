@@ -13,6 +13,7 @@ export default function AdminInfoCards({ customCards }) {
     const [persoProjectsCount, setPersoProjectsCount] = useState(null);
     const [epitechProjectsCount, setEpitechProjectsCount] = useState(null);
     const [anomaliesCount, setAnomaliesCount] = useState(0);
+    const [adminCallsCount, setAdminCallsCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -43,28 +44,33 @@ export default function AdminInfoCards({ customCards }) {
                     setEpitechProjectsCount(epitechData.value.length);
                 }
 
-                // 4. Extraction et comptage précis des anomalies
-                let totalLogAnomalies = 0;
+                // 4. Extraction et comptage des appels Admin & requêtes anormales
+                let adminCalls = 0;
+                let suspiciousCalls = 0;
 
                 if (logsData.status === 'fulfilled' && logsData.value?.lines) {
                     const rawLines = logsData.value.lines;
-                    const anomalyLines = rawLines.filter((line) => {
-                        // Exclure les tests automatisés pytest
-                        if (line.includes('testclient') || line.includes('testadmin')) return false;
+                    rawLines.forEach((line) => {
+                        // Exclure les tests automatisés internes pytest
+                        if (line.includes('testclient') || line.includes('testadmin')) return;
 
                         const lower = line.toLowerCase();
-                        return (
-                            line.includes('[91m') ||
+                        const isAdmin = lower.includes('/api/admin') || lower.includes('/api/auth') || lower.includes('paneladmin');
+                        const isSuspicious = (
+                            lower.includes('statut 401') ||
+                            lower.includes('statut 403') ||
+                            lower.includes('statut 404') ||
+                            lower.includes('statut 500') ||
                             lower.includes('erreur') ||
                             lower.includes('error') ||
                             lower.includes('exception') ||
-                            lower.includes('critique') ||
                             lower.includes('failed') ||
-                            lower.includes('interruption')
+                            lower.includes('[91m')
                         );
-                    });
 
-                    totalLogAnomalies = anomalyLines.length;
+                        if (isAdmin) adminCalls++;
+                        if (isSuspicious) suspiciousCalls++;
+                    });
                 }
 
                 let recordedBugs = 0;
@@ -73,8 +79,9 @@ export default function AdminInfoCards({ customCards }) {
                                    statusData.value.recent_bugs?.length || 0;
                 }
 
-                const totalCalculated = Math.max(totalLogAnomalies, recordedBugs);
+                const totalCalculated = Math.max(suspiciousCalls, recordedBugs);
                 setAnomaliesCount(totalCalculated);
+                setAdminCallsCount(adminCalls);
             } catch (err) {
                 console.warn('[AdminInfoCards] Erreur de chargement des métriques :', err.message);
             } finally {
@@ -127,54 +134,54 @@ export default function AdminInfoCards({ customCards }) {
 
         if (cvDownloadsList.length === 1) {
             cvDownloadsList.push(
-                { time: 'Format', source: 'Cible', message: 'CV_PIERRE_UNTERSINGER.pdf' },
-                { time: 'Télémétrie', source: 'Tracking', message: 'Écoute active (IP & OS)' }
+                { source: 'Cible', message: 'CV_PIERRE_UNTERSINGER.pdf' },
+                { source: 'Télémétrie', message: 'Écoute active (IP & OS)' }
             );
         } else if (cvDownloadsList.length === 2) {
             cvDownloadsList.push(
-                { time: 'Télémétrie', source: 'Tracking', message: 'Écoute active (IP & OS)' }
+                { source: 'Télémétrie', message: 'Écoute active (IP & OS)' }
             );
         }
     } else {
         cvDownloadsList = [
-            { time: 'Live', source: 'Statut', message: '0 téléchargement enregistré' },
-            { time: 'Format', source: 'Cible', message: 'CV_PIERRE_UNTERSINGER.pdf' },
-            { time: 'Télémétrie', source: 'Tracking', message: 'Écoute active (IP & OS)' },
+            { source: 'Statut', message: typeof cvDownloadsCount === 'number' && cvDownloadsCount > 0 ? `${cvDownloadsCount} téléchargé(s)` : 'En attente' },
+            { source: 'Fichier', message: 'CV_PIERRE_UNTERSINGER.pdf' },
+            { source: 'Télémétrie', message: 'Écoute active (IP & OS)' },
         ];
     }
 
     // 3. Projets en ligne
     const totalProjects = (persoProjectsCount ?? 0) + (epitechProjectsCount ?? 0);
 
-    // 4. Anomalies logs & coloration dynamique
+    // 4. Anomalies logs & appels Admin (Coloration dynamique)
     let logVariant = 'healthy';
-    let logSubtitle = 'Journée saine • 0 incident';
+    let logSubtitle = `${adminCallsCount} appel${adminCallsCount > 1 ? 's' : ''} admin • 0 incident`;
 
     if (anomaliesCount > 0 && anomaliesCount <= 3) {
         logVariant = 'warning';
-        logSubtitle = `${anomaliesCount} événement${anomaliesCount > 1 ? 's' : ''} détecté${anomaliesCount > 1 ? 's' : ''}`;
+        logSubtitle = `${anomaliesCount} anomalie${anomaliesCount > 1 ? 's' : ''} • ${adminCallsCount} admin`;
     } else if (anomaliesCount > 3) {
         logVariant = 'danger';
-        logSubtitle = `${anomaliesCount} anomalies • 3 plus récentes`;
+        logSubtitle = `${anomaliesCount} anomalies • Attention requise`;
     }
 
     const logItems = [
-        { source: 'Santé système', message: anomaliesCount === 0 ? 'Optimale (0 incident)' : `${anomaliesCount} anomalie${anomaliesCount > 1 ? 's' : ''}` },
-        { source: 'Serveur API', message: anomaliesCount === 0 ? 'Opérationnel' : 'Vérification requise' },
-        { source: 'Télémétrie', message: 'Surveillance active' },
+        { source: 'Appels Admin', message: `${adminCallsCount} requête${adminCallsCount > 1 ? 's' : ''}` },
+        { source: 'Requêtes anormales', message: anomaliesCount === 0 ? '0 incident (Nominal)' : `${anomaliesCount} détectée${anomaliesCount > 1 ? 's' : ''}` },
+        { source: 'Sécurité API', message: 'Surveillance active' },
     ];
 
     // Mini rangées structurées et harmonisées pour les 4 cartes
     const visitorItems = [
-        { time: 'Live', source: "Aujourd'hui", message: `+${todayVisitors} visiteur${todayVisitors > 1 ? 's' : ''}` },
-        { time: 'Total', source: 'Pages vues', message: `${totalPageviews} vues` },
-        { time: '30j', source: 'Période', message: 'Télémétrie active' },
+        { source: "Aujourd'hui", message: `+${todayVisitors} visiteur${todayVisitors > 1 ? 's' : ''}` },
+        { source: 'Pages vues', message: `${totalPageviews} vues` },
+        { source: 'Période', message: '30 derniers jours' },
     ];
 
     const projectItems = [
-        { time: 'Perso', source: 'Personnels', message: `${persoProjectsCount ?? 0} en ligne` },
-        { time: 'Epi', source: 'Epitech', message: `${epitechProjectsCount ?? 0} validés` },
-        { time: '100%', source: 'Statut', message: 'Tous opérationnels' },
+        { source: 'Personnels', message: `${persoProjectsCount ?? 0} en ligne` },
+        { source: 'Epitech', message: `${epitechProjectsCount ?? 0} validés` },
+        { source: 'Statut', message: '100% opérationnels' },
     ];
 
     const cards = customCards || [
@@ -210,8 +217,10 @@ export default function AdminInfoCards({ customCards }) {
         },
         {
             id: 'card-logs',
-            title: 'Anomalies logs',
-            value: `${anomaliesCount} anomalie${anomaliesCount > 1 ? 's' : ''}`,
+            title: 'Sécurité & Logs',
+            value: anomaliesCount === 0
+                ? `${adminCallsCount} appel${adminCallsCount > 1 ? 's' : ''} admin`
+                : `${anomaliesCount} anomalie${anomaliesCount > 1 ? 's' : ''}`,
             subtitle: logSubtitle,
             variant: logVariant,
             items: logItems,
