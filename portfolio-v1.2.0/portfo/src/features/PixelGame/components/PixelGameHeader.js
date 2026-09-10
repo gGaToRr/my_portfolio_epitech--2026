@@ -35,7 +35,7 @@ export default function PixelGameHeader({
                     className={`admin-pixel-fight-btn ${isFighting ? 'is-fighting' : ''}`}
                     title="Déclencher le combat pixel-art"
                 >
-                    {isFighting ? '⚔️ Combat...' : `⚔️ Combat (${battleCountdown}s)`}
+                    {isFighting ? 'Combat...' : `Combat (${battleCountdown}s)`}
                 </button>
 
                 <button
