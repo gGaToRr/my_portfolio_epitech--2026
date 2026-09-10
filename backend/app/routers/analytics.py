@@ -1,15 +1,17 @@
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, Header
+from fastapi import APIRouter, Depends, Query, Request, Header
 from sqlalchemy import func, distinct, desc
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import PageView, AnalyticsEvent, AdminUser
 from app.schemas import PageViewCollect, EventCollect, AnalyticsStatsSummary
 from app.auth import get_current_admin
 from app.logger import log_success, log_warning, log_interaction
+from app.security import get_client_ip, public_write_limiter, sanitize_log_value
 
 router = APIRouter(tags=["Analytics"])
 
@@ -57,9 +59,15 @@ def parse_user_agent(ua_string: str) -> dict:
     return {"device": device, "browser": browser, "os": os_name}
 
 def get_visitor_hash(client_ip: str, user_agent: str) -> str:
-    # Sel quotidien pour anonymisation RGPD (change chaque jour)
+    """
+    Empreinte visiteur, renouvelée chaque jour (anonymisation RGPD).
+
+    Le sel quotidien seul ne suffisait pas : l'espace des adresses IPv4 se
+    parcourt entièrement, donc à user-agent connu on retrouvait l'IP d'origine
+    par force brute sur le hash. On ajoute SECRET_KEY, que l'attaquant n'a pas.
+    """
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    raw = f"{today_str}:{client_ip}:{user_agent}"
+    raw = f"{settings.SECRET_KEY}:{today_str}:{client_ip}:{user_agent}"
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
 # =========================================================================
@@ -73,14 +81,15 @@ def collect_pageview(
     user_agent: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    if "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
+    client_ip = get_client_ip(request)
+    # Route publique en écriture : sans plafond, une simple boucle suffisait à
+    # fausser toutes les statistiques et à faire enfler la base SQLite.
+    public_write_limiter.enforce(client_ip, "Trop de requêtes de collecte.")
 
     ua_info = parse_user_agent(user_agent or "")
     # Exclure les bots des statistiques
     if ua_info["device"] == "bot":
-        log_warning("analytics.py", "collect_pageview", f"Bot/Crawler détecté et ignoré : UA='{user_agent}' (IP: {client_ip})")
+        log_warning("analytics.py", "collect_pageview", f"Bot/Crawler détecté et ignoré : UA='{sanitize_log_value(user_agent, 120)}' (IP: {client_ip})")
         return
 
     v_hash = get_visitor_hash(client_ip, user_agent or "")
@@ -103,7 +112,7 @@ def collect_pageview(
     )
     db.add(view)
     db.commit()
-    log_success("analytics.py", "collect_pageview", f"Page vue enregistrée sur '{view.path}' (Appareil: {ua_info['device']}, OS: {ua_info['os']}, Navigateur: {ua_info['browser']})")
+    log_success("analytics.py", "collect_pageview", f"Page vue enregistrée sur '{sanitize_log_value(view.path, 120)}' (Appareil: {ua_info['device']}, OS: {ua_info['os']}, Navigateur: {ua_info['browser']})")
     return None
 
 @router.post("/api/analytics/event", status_code=204)
@@ -113,9 +122,8 @@ def collect_event(
     user_agent: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    if "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
+    client_ip = get_client_ip(request)
+    public_write_limiter.enforce(client_ip, "Trop d'événements envoyés.")
 
     v_hash = get_visitor_hash(client_ip, user_agent or "")
     ua_info = parse_user_agent(user_agent or "")
@@ -125,9 +133,6 @@ def collect_event(
     extra.setdefault("browser", ua_info["browser"])
     extra.setdefault("os", ua_info["os"])
     extra.setdefault("device", ua_info["device"])
-
-    source_file = extra.get("source_file", "App.js")
-    source_func = extra.get("source_func", payload.event_name)
 
     event = AnalyticsEvent(
         event_name=payload.event_name[:100],
@@ -139,14 +144,19 @@ def collect_event(
     db.add(event)
     db.commit()
 
-    detail = f"Action interactive : '{payload.event_name}'"
+    # Le fichier et la fonction inscrits dans le log étaient auparavant lus dans
+    # `extra_data`, donc choisis par le client : n'importe qui pouvait faire
+    # apparaître une ligne signée "[auth.py](login_admin)" dans la console admin.
+    # Ils sont désormais fixes, et toutes les valeurs interpolées passent par
+    # sanitize_log_value() qui retire sauts de ligne et séquences ANSI.
+    detail = f"Action interactive : '{sanitize_log_value(payload.event_name, 100)}'"
     if payload.target:
-        detail += f" sur '{payload.target}'"
+        detail += f" sur '{sanitize_log_value(payload.target, 120)}'"
     if payload.path:
-        detail += f" (Page: {payload.path})"
+        detail += f" (Page: {sanitize_log_value(payload.path, 120)})"
     detail += f" [IP: {client_ip}, {ua_info['os']} / {ua_info['browser']}]"
 
-    log_interaction(source_file, source_func, detail)
+    log_interaction("analytics.py", "collect_event", detail)
     return None
 
 # =========================================================================
@@ -155,7 +165,10 @@ def collect_event(
 
 @router.get("/api/admin/analytics/stats", response_model=AnalyticsStatsSummary)
 def get_analytics_stats(
-    days: int = 30,
+    # Borné : la génération de l'historique exécute deux requêtes SQL par jour
+    # demandé. Sans plafond, days=3000 tenait la connexion 4,4 s pour 6 000
+    # requêtes, et une valeur négative renvoyait un graphique vide sans erreur.
+    days: int = Query(30, ge=1, le=365),
     db: Session = Depends(get_db),
     admin: AdminUser = Depends(get_current_admin)
 ):

@@ -1,7 +1,8 @@
 import pytest
 from app.metrics import metrics_tracker, SystemMetricsTracker
 
-def test_get_system_status_endpoint(client):
+def test_public_status_stays_minimal(client):
+    """La sonde publique ne doit exposer que l'état global."""
     res = client.get("/status")
     assert res.status_code == 200
     data = res.json()
@@ -9,16 +10,27 @@ def test_get_system_status_endpoint(client):
     assert "uptime_seconds" in data
     assert "uptime_human" in data
     assert "started_at" in data
-    assert "metrics" in data
-    assert "components" in data
-    assert "recent_bugs" in data
-    assert data["components"]["database"]["status"] == "connected"
+    # Ces champs contenaient des données internes (conteneurs Docker, version
+    # de Python) et les IP d'autres visiteurs via recent_bugs.
+    for leaked in ("components", "recent_bugs", "metrics", "history"):
+        assert leaked not in data, f"'{leaked}' ne doit plus être public"
 
-def test_get_system_status_alias_api_status(client):
+def test_public_status_alias_api_status(client):
     res = client.get("/api/status")
     assert res.status_code == 200
+    assert "components" not in res.json()
+
+def test_admin_status_requires_auth(client):
+    assert client.get("/api/admin/status").status_code == 401
+
+def test_admin_status_returns_full_detail(client, auth_headers):
+    res = client.get("/api/admin/status", headers=auth_headers)
+    assert res.status_code == 200
     data = res.json()
+    assert data["components"]["database"]["status"] == "connected"
     assert data["components"]["database"]["type"] == "SQLite"
+    assert "recent_bugs" in data
+    assert "metrics" in data
 
 def test_metrics_tracker_uptime_calculation():
     tracker = SystemMetricsTracker()

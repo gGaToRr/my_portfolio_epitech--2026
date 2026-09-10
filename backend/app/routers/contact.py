@@ -1,5 +1,5 @@
+import html
 import smtplib
-import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import List
@@ -12,49 +12,63 @@ from app.models import ContactMessage, AdminUser
 from app.schemas import ContactRequest, ContactMessageOut
 from app.auth import get_current_admin
 from app.logger import log_success, log_error, log_warning
+from app.security import RateLimiter, get_client_ip, sanitize_log_value
 
 router = APIRouter(tags=["Contact"])
 
-# Rate limit simple en mémoire
-rate_limit_map = {}
+# Rate limit partagé (voir app/security.py). L'implémentation locale précédente
+# ne purgeait jamais ses entrées expirées : le dictionnaire grossissait à chaque
+# nouvelle IP rencontrée.
 RATE_LIMIT_WINDOW = 10 * 60  # 10 minutes
 RATE_LIMIT_MAX = 5
+contact_limiter = RateLimiter(RATE_LIMIT_MAX, RATE_LIMIT_WINDOW, name="contact")
 
 def is_rate_limited(ip: str) -> bool:
-    now = time.time()
-    record = rate_limit_map.get(ip)
-    if not record or (now - record["first_request"]) > RATE_LIMIT_WINDOW:
-        rate_limit_map[ip] = {"count": 1, "first_request": now}
-        return False
-    
-    if record["count"] >= RATE_LIMIT_MAX:
+    if contact_limiter.check(ip) is not None:
         log_warning("contact.py", "is_rate_limited", f"Limite d'envoi de messages atteinte pour l'IP {ip}")
         return True
-    
-    record["count"] += 1
+    contact_limiter.hit(ip)
     return False
+
+def is_smtp_configured() -> bool:
+    """
+    Indique si un vrai serveur SMTP est joignable.
+
+    Ce calcul était dupliqué mot pour mot entre le healthcheck et l'envoi, et la
+    détection du mot de passe factice était codée en dur sur la seule chaîne
+    française du fichier .env.example. Les marqueurs sont maintenant dans la
+    configuration.
+    """
+    if not (settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASS):
+        return False
+    markers = [m.strip() for m in settings.SMTP_PLACEHOLDER_MARKERS.split(",") if m.strip()]
+    return not any(marker in settings.SMTP_PASS for marker in markers)
 
 @router.get("/api/health")
 def healthcheck():
-    is_smtp_ready = bool(
-        settings.SMTP_HOST and
-        settings.SMTP_USER and
-        settings.SMTP_PASS and
-        "ton_mot_de_passe" not in settings.SMTP_PASS
-    )
-    log_success("contact.py", "healthcheck", f"Healthcheck exécuté (SMTP Configuré: {is_smtp_ready})")
+    """
+    Sonde publique. Volontairement muette sur la configuration : la version
+    précédente renvoyait l'adresse e-mail de destination (récoltable par un
+    robot de spam) et l'état SMTP, qui renseigne un attaquant sur la surface
+    disponible. Le détail est resté disponible sur /api/admin/health.
+    """
+    return {"status": "ok", "framework": "FastAPI (Python)"}
+
+@router.get("/api/admin/health")
+def admin_healthcheck(admin: AdminUser = Depends(get_current_admin)):
+    """Détail de la configuration de contact, réservé à l'administrateur."""
+    smtp_ready = is_smtp_configured()
+    log_success("contact.py", "admin_healthcheck", f"Healthcheck détaillé consulté par '{admin.username}' (SMTP Configuré: {smtp_ready})")
     return {
         "status": "ok",
-        "smtpConfigured": is_smtp_ready,
+        "smtpConfigured": smtp_ready,
         "receiver": settings.CONTACT_RECEIVER_EMAIL,
         "framework": "FastAPI (Python)"
     }
 
 @router.post("/api/contact")
 def send_contact_message(payload: ContactRequest, request: Request, db: Session = Depends(get_db)):
-    client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
-    if "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
+    client_ip = get_client_ip(request)
 
     if is_rate_limited(client_ip):
         log_error("contact.py", "send_contact_message", f"Rejet du message - Rate limit actif pour IP {client_ip}")
@@ -68,9 +82,12 @@ def send_contact_message(payload: ContactRequest, request: Request, db: Session 
         log_warning("contact.py", "send_contact_message", f"Bot spam honeypot intercepté (IP: {client_ip})")
         return {"success": True, "message": "Message envoyé."}
 
-    name = payload.name.strip()[:80]
-    email = payload.email.strip()[:120]
-    phone = (payload.phone or "Non renseigné").strip()[:32]
+    # `strip()` ne retire que les espaces de début et de fin : un saut de ligne
+    # au milieu de l'adresse survivait et faisait échouer la sérialisation des
+    # en-têtes SMTP (HeaderParseError -> HTTP 500, message perdu).
+    name = sanitize_log_value(payload.name, 80)
+    email = sanitize_log_value(payload.email, 120)
+    phone = sanitize_log_value(payload.phone or "Non renseigné", 32)
     msg = payload.message.strip()[:4000]
 
     if not name or not email or not msg:
@@ -91,16 +108,11 @@ def send_contact_message(payload: ContactRequest, request: Request, db: Session 
         db.commit()
         db.refresh(new_msg)
     except Exception as db_err:
+        # Sans rollback, la session reste inutilisable jusqu'à sa fermeture.
+        db.rollback()
         log_error("contact.py", "send_contact_message", f"Erreur enregistrement message DB: {db_err}")
 
-    is_smtp_ready = bool(
-        settings.SMTP_HOST and
-        settings.SMTP_USER and
-        settings.SMTP_PASS and
-        "ton_mot_de_passe" not in settings.SMTP_PASS
-    )
-
-    if is_smtp_ready:
+    if is_smtp_configured():
         try:
             mime_msg = MIMEMultipart("alternative")
             mime_msg["Subject"] = f"[Portfolio] Nouveau message de {name}"
@@ -109,15 +121,26 @@ def send_contact_message(payload: ContactRequest, request: Request, db: Session 
             mime_msg["Reply-To"] = email
 
             text_content = f"Nom: {name}\nEmail: {email}\nTéléphone: {phone}\n\nMessage:\n{msg}"
+
+            # Échappement obligatoire : ces quatre champs viennent d'un
+            # formulaire public. Interpolés bruts, ils permettaient d'insérer un
+            # lien cliquable dans un e-mail qui semble venir de son propre site,
+            # soit un vecteur de phishing visant le destinataire. La partie
+            # text/plain, elle, n'interprète rien et reste inchangée.
+            e_name = html.escape(name)
+            e_email = html.escape(email)
+            e_phone = html.escape(phone)
+            e_msg = html.escape(msg)
+
             html_content = f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
                 <h2 style="color: #61dafb; margin-top: 0;">Nouveau message depuis le portfolio</h2>
-                <p><strong>Nom :</strong> {name}</p>
-                <p><strong>Email :</strong> <a href="mailto:{email}">{email}</a></p>
-                <p><strong>Téléphone :</strong> {phone}</p>
+                <p><strong>Nom :</strong> {e_name}</p>
+                <p><strong>Email :</strong> <a href="mailto:{e_email}">{e_email}</a></p>
+                <p><strong>Téléphone :</strong> {e_phone}</p>
                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
                 <p><strong>Message :</strong></p>
-                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 6px;">{msg}</p>
+                <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 6px;">{e_msg}</p>
             </div>
             """
             mime_msg.attach(MIMEText(text_content, "plain"))

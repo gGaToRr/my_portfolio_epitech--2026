@@ -1,8 +1,6 @@
 import pytest
-from app.routers.auth import login_attempts
 
 def test_admin_login_success(client):
-    login_attempts.clear()
     response = client.post("/api/admin/login", json={
         "username": "testadmin",
         "password": "testpassword123"
@@ -14,7 +12,6 @@ def test_admin_login_success(client):
     assert data["username"] == "testadmin"
 
 def test_admin_login_wrong_password(client):
-    login_attempts.clear()
     response = client.post("/api/admin/login", json={
         "username": "testadmin",
         "password": "wrongpassword"
@@ -23,7 +20,6 @@ def test_admin_login_wrong_password(client):
     assert "Identifiants incorrects" in response.json()["detail"]
 
 def test_admin_login_unknown_user(client):
-    login_attempts.clear()
     response = client.post("/api/admin/login", json={
         "username": "nonexistent_user",
         "password": "somepassword"
@@ -31,7 +27,6 @@ def test_admin_login_unknown_user(client):
     assert response.status_code == 401
 
 def test_admin_login_rate_limiting(client):
-    login_attempts.clear()
     # 5 failed attempts
     for _ in range(5):
         res = client.post("/api/admin/login", json={
@@ -60,7 +55,6 @@ def test_get_me_unauthorized(client):
     assert response.status_code == 401
 
 def test_token_lifespan_is_30_minutes(client):
-    login_attempts.clear()
     from jose import jwt
     from datetime import datetime, timezone
     from app.config import settings

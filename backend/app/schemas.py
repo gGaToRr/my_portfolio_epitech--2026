@@ -1,6 +1,7 @@
+import re
 from typing import List, Optional, Any, Dict
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # ----------------- Auth Schemas -----------------
 class Token(BaseModel):
@@ -108,12 +109,34 @@ class AnalyticsStatsSummary(BaseModel):
     recent_cv_downloads: List[Dict[str, Any]] = Field(default_factory=list)
 
 # ----------------- Contact Schema -----------------
+# Même règle que la validation du formulaire côté React (Contact.js) : une
+# adresse sans espace, avec un @ et un point dans le domaine. Le frontend
+# validait déjà, mais il n'est pas la frontière de confiance — l'API est
+# appelable directement, et acceptait donc n'importe quelle chaîne.
+# Regex plutôt que EmailStr pour ne pas ajouter la dépendance email-validator.
+EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
 class ContactRequest(BaseModel):
-    name: str
-    email: str
-    phone: Optional[str] = None
-    message: str
+    name: str = Field(min_length=1, max_length=80)
+    email: str = Field(min_length=3, max_length=120)
+    phone: Optional[str] = Field(default=None, max_length=32)
+    message: str = Field(min_length=1, max_length=4000)
     botcheck: Optional[Any] = None
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        candidate = value.strip()
+        if not EMAIL_RE.match(candidate):
+            raise ValueError("Adresse email invalide.")
+        return candidate
+
+    @field_validator("name", "message")
+    @classmethod
+    def validate_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Ce champ est requis.")
+        return value
 
 class ContactMessageOut(BaseModel):
     id: int

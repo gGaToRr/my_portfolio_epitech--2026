@@ -19,6 +19,9 @@ from app.main import app
 from app.models import AdminUser
 from app.auth import hash_password, create_access_token
 from app.metrics import metrics_tracker
+from app.routers.auth import login_limiter
+from app.routers.contact import contact_limiter
+from app.security import public_write_limiter
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
@@ -35,6 +38,21 @@ def reset_metrics():
     metrics_tracker.clear_bugs()
     yield
     metrics_tracker.clear_bugs()
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiters():
+    """
+    Vide les limiteurs de débit entre chaque test.
+
+    Ils sont des singletons de module : sans cette réinitialisation, un test qui
+    sature une fenêtre fait échouer les suivants selon l'ordre d'exécution. Les
+    tests appelaient auparavant `.clear()` à la main, et l'oubli était silencieux.
+    """
+    for limiter in (login_limiter, contact_limiter, public_write_limiter):
+        limiter.clear()
+    yield
+    for limiter in (login_limiter, contact_limiter, public_write_limiter):
+        limiter.clear()
 
 @pytest.fixture(scope="function")
 def db_session():
