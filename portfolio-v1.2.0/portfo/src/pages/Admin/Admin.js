@@ -139,7 +139,6 @@ export default function Admin({ theme, onToggleTheme }) {
         { id: 'analytics', name: 'Analytics' },
         { id: 'logs', name: 'Logs' },
         { id: 'settings', name: 'Settings' },
-        { id: 'game', name: 'Jeu Pixel ↗', href: '/panelAdmin/game' },
     ];
 
     return (
@@ -159,40 +158,10 @@ export default function Admin({ theme, onToggleTheme }) {
                             sessionStorage.setItem('admin_logs_viewed_session', 'true');
                         } catch (_) {}
                     }
-                    if (id === 'game') {
-                        window.location.href = '/panelAdmin/game';
-                    } else {
-                        setActiveTab(id);
-                    }
+                    setActiveTab(id);
                 }}
                 footerNode={
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <Link to="/panelAdmin/game" style={{ textDecoration: 'none' }}>
-                            <button
-                                type="button"
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    fontSize: '15px',
-                                    textAlign: 'left',
-                                    background: 'transparent',
-                                    color: 'var(--accent, #10b981)',
-                                    border: '1px solid transparent',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = 'var(--surface-hover)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                }}
-                            >
-                                Arène Pixel (Jeu) ↗
-                            </button>
-                        </Link>
                         <Link to="/" style={{ textDecoration: 'none' }}>
                             <button
                                 type="button"

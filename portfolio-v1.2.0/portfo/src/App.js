@@ -8,8 +8,6 @@ import './App.css';
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail/ProjectDetail'));
 const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
 const Admin = lazy(() => import('./pages/Admin/Admin'));
-const AdminGame = lazy(() => import('./pages/AdminGame/AdminGame'));
-const AdminProtectedRoute = lazy(() => import('./components/AdminProtectedRoute/AdminProtectedRoute'));
 
 function PageLoader() {
     return <div className="page-loader" aria-live="polite">Chargement…</div>;
@@ -32,22 +30,6 @@ function App() {
                         />
                         <Route path="/projects/:slug" element={<ProjectDetail />} />
                         <Route path="/panelAdmin" element={<Admin theme={theme} onToggleTheme={toggleTheme} />} />
-                        <Route
-                            path="/panelAdmin/game"
-                            element={
-                                <AdminProtectedRoute>
-                                    <AdminGame theme={theme} onToggleTheme={toggleTheme} />
-                                </AdminProtectedRoute>
-                            }
-                        />
-                        <Route
-                            path="/admin/game"
-                            element={
-                                <AdminProtectedRoute>
-                                    <AdminGame theme={theme} onToggleTheme={toggleTheme} />
-                                </AdminProtectedRoute>
-                            }
-                        />
                         <Route path="/youtube" element={<NotFound isYouTube={true} />} />
                         <Route path="*" element={<NotFound />} />
                     </Routes>
