@@ -19,6 +19,19 @@ const LINES_COUNT_OPTIONS = [
     { value: 500, label: '500 lignes / jour' },
 ];
 
+/**
+ * Nettoie une ligne de log de tous les caractères de contrôle, codes ANSI (\x1b, \033, \u001b, [92m, [0m)
+ * et caractères spéciaux invisibles ou corrompus.
+ */
+function cleanLogLine(line) {
+    if (!line) return '';
+    // eslint-disable-next-line no-control-regex
+    const ansiRegex = /\u001b\[[0-9;]*[a-zA-Z]|\x1b\[[0-9;]*[a-zA-Z]|\x1b|\u001b|\[\d+m/g;
+    // eslint-disable-next-line no-control-regex
+    const controlRegex = /[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g;
+    return line.replace(ansiRegex, '').replace(controlRegex, '').trim();
+}
+
 export default function AdminLogs({ onBack }) {
     // Liste des 5 jours (Aujourd'hui + 4 jours précédents)
     const [days, setDays] = useState([]);
@@ -29,7 +42,7 @@ export default function AdminLogs({ onBack }) {
     const [selectedMethod, setSelectedMethod] = useState('ALL'); // 'ALL', 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'
     const [linesCount, setLinesCount] = useState(200);
 
-    const consoleEndRef = useRef(null);
+    const consoleContainerRef = useRef(null);
 
     // Enregistrement de la consultation de la page de logs pour la session
     useEffect(() => {
@@ -103,10 +116,13 @@ export default function AdminLogs({ onBack }) {
     }, [loadAllRecentLogs]);
 
     // Calcul des logs actifs selon le jour sélectionné (Depuis le cache mémoire)
+    // Les anciens logs sont placés en haut de la console (ordre chronologique : passé en haut, présent en bas)
     const activeLogs = useMemo(() => {
         if (selectedDayKey === 'all') {
             const all = [];
-            days.forEach((d) => {
+            // days est renvoyé du plus récent au plus ancien par l'API, on inverse pour mettre les anciens jours en haut
+            const chronoSortedDays = [...days].reverse();
+            chronoSortedDays.forEach((d) => {
                 const cached = logsCacheRef.current[d.filename];
                 if (cached && cached.lines) {
                     all.push(...cached.lines);
@@ -168,12 +184,12 @@ export default function AdminLogs({ onBack }) {
         });
     }, [activeLogs, searchTerm, filterLevel, selectedMethod]);
 
-    // Auto-scroll vers le bas lors de l'arrivée de nouveaux logs
+    // Maintien du scroll en haut (anciens logs visibles immédiatement) lors des changements de filtre/date
     useEffect(() => {
-        if (consoleEndRef.current && filteredLogs.length > 0) {
-            consoleEndRef.current.scrollIntoView({ behavior: 'auto' });
+        if (consoleContainerRef.current) {
+            consoleContainerRef.current.scrollTop = 0;
         }
-    }, [filteredLogs.length]);
+    }, [selectedDayKey, filterLevel, selectedMethod]);
 
     const getLineClass = (line) => {
         const lower = line.toLowerCase();
@@ -365,7 +381,7 @@ export default function AdminLogs({ onBack }) {
 
             {/* 2. Card inférieure dédiée exclusivement à la console des logs */}
             <div className="admin-logs-console-card">
-                <div className="admin-logs-console">
+                <div className="admin-logs-console" ref={consoleContainerRef}>
                     {filteredLogs.length === 0 ? (
                         <div className="admin-logs-empty">
                             {loading ? 'Chargement du flux de logs…' : 'Aucune ligne ne correspond aux filtres actuels.'}
@@ -375,12 +391,11 @@ export default function AdminLogs({ onBack }) {
                             <div key={idx} className={`admin-logs-line ${getLineClass(line)}`}>
                                 <span className="admin-logs-line-num">{idx + 1}</span>
                                 <span className="admin-logs-line-content">
-                                    {line.replace(/\[\d+m/g, '')}
+                                    {cleanLogLine(line)}
                                 </span>
                             </div>
                         ))
                     )}
-                    <div ref={consoleEndRef} />
                 </div>
             </div>
         </div>
