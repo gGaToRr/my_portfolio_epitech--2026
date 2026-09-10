@@ -118,8 +118,14 @@ def collect_event(
         client_ip = client_ip.split(",")[0].strip()
 
     v_hash = get_visitor_hash(client_ip, user_agent or "")
+    ua_info = parse_user_agent(user_agent or "")
 
-    extra = payload.extra_data or {}
+    extra = dict(payload.extra_data or {})
+    extra.setdefault("client_ip", client_ip)
+    extra.setdefault("browser", ua_info["browser"])
+    extra.setdefault("os", ua_info["os"])
+    extra.setdefault("device", ua_info["device"])
+
     source_file = extra.get("source_file", "App.js")
     source_func = extra.get("source_func", payload.event_name)
 
@@ -138,6 +144,7 @@ def collect_event(
         detail += f" sur '{payload.target}'"
     if payload.path:
         detail += f" (Page: {payload.path})"
+    detail += f" [IP: {client_ip}, {ua_info['os']} / {ua_info['browser']}]"
 
     log_interaction(source_file, source_func, detail)
     return None
@@ -230,14 +237,42 @@ def get_analytics_stats(
             "visitors": day_uniques
         })
 
+    # Total téléchargements du CV et liste des 5 derniers téléchargements avec IP et métadonnées
+    total_cv_downloads = db.query(func.count(AnalyticsEvent.id)).filter(
+        AnalyticsEvent.event_name == "download_cv"
+    ).scalar() or 0
+
+    cv_events = db.query(AnalyticsEvent).filter(
+        AnalyticsEvent.event_name == "download_cv"
+    ).order_by(desc(AnalyticsEvent.timestamp)).limit(5).all()
+
+    recent_cv_downloads = []
+    for ev in cv_events:
+        extra = ev.extra_data or {}
+        ip = extra.get("client_ip") or "127.0.0.1"
+        recent_cv_downloads.append({
+            "id": ev.id,
+            "timestamp": ev.timestamp.isoformat() if ev.timestamp else "",
+            "time": ev.timestamp.strftime("%H:%M") if ev.timestamp else "",
+            "date": ev.timestamp.strftime("%d/%m") if ev.timestamp else "",
+            "ip": ip,
+            "target": ev.target or "CV_PIERRE_UNTERSINGER.pdf",
+            "format": str(extra.get("format", "PDF")).upper(),
+            "browser": extra.get("browser", "Navigateur"),
+            "os": extra.get("os", "OS"),
+            "device": extra.get("device", "desktop"),
+        })
+
     return {
         "total_pageviews": total_views,
         "unique_visitors": unique_visitors,
         "today_pageviews": today_views,
         "today_unique_visitors": today_visitors,
+        "total_cv_downloads": total_cv_downloads,
         "top_pages": top_pages,
         "top_referrers": top_referrers,
         "device_breakdown": device_breakdown,
         "recent_events": recent_events,
-        "views_per_day": daily_stats
+        "views_per_day": daily_stats,
+        "recent_cv_downloads": recent_cv_downloads,
     }

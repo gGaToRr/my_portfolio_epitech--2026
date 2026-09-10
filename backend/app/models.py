@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, Float
 from app.database import Base
 
 def utc_now():
@@ -69,3 +69,30 @@ class AnalyticsEvent(Base):
     visitor_hash = Column(String(64), index=True, nullable=False)
     extra_data = Column(JSON, default=dict)
     timestamp = Column(DateTime, default=utc_now, index=True)
+
+class ContactMessage(Base):
+    __tablename__ = "contact_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(150), nullable=False)
+    phone = Column(String(50), nullable=True)
+    message = Column(Text, nullable=False)
+    client_ip = Column(String(50), nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=utc_now)
+
+class DailyUptimeLog(Base):
+    __tablename__ = "daily_uptime_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date_str = Column(String(10), index=True, nullable=False)  # "YYYY-MM-DD"
+    service = Column(String(50), index=True, nullable=False)   # "general", "api", "database"
+    total_checks = Column(Integer, default=0)
+    successful_checks = Column(Integer, default=0)
+    failed_checks = Column(Integer, default=0)
+    uptime_percentage = Column(Float, default=100.0)
+    status = Column(String(20), default="operational")          # "operational", "degraded", "outage"
+    details = Column(String(255), default="0 incident")
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+

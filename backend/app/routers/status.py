@@ -1,10 +1,13 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, Request, status
+from pathlib import Path
+from typing import Optional, List, Dict, Any
+from fastapi import APIRouter, Depends, Request, status, Query
 from pydantic import BaseModel
+from app.config import settings
 from app.metrics import metrics_tracker
 from app.auth import get_current_admin
 from app.models import AdminUser
-from app.logger import log_success, log_error
+from app.logger import log_success, log_error, get_daily_log_filename
+from scripts.log_manager import list_logs_and_archives, archive_previous_month, create_monthly_archive
 
 router = APIRouter(tags=["Status & Uptime"])
 
@@ -44,3 +47,51 @@ def clear_bugs(_: AdminUser = Depends(get_current_admin)):
     metrics_tracker.clear_bugs()
     log_success("status.py", "clear_bugs", "Historique des bugs réinitialisé par l'administrateur")
     return {"success": True, "message": "Historique des bugs réinitialisé"}
+
+# ----------------- Logs Console Endpoints -----------------
+@router.get("/api/admin/logs/live")
+def get_live_logs(
+    lines: int = Query(150, ge=10, le=1000),
+    filename: Optional[str] = Query(None),
+    _: AdminUser = Depends(get_current_admin)
+):
+    """Retourne les dernières lignes d'un fichier de log."""
+    logs_dir = Path(settings.LOG_FILE).parent
+    target = logs_dir / (filename if filename else get_daily_log_filename())
+    if not target.exists():
+        target = Path(settings.LOG_FILE)
+
+    if not target.exists():
+        return {"filename": target.name, "lines": [], "total_lines": 0}
+
+    try:
+        with open(target, "r", encoding="utf-8", errors="replace") as f:
+            all_lines = f.readlines()
+        tail_lines = [l.strip() for l in all_lines[-lines:] if l.strip()]
+        return {
+            "filename": target.name,
+            "lines": tail_lines,
+            "total_lines": len(all_lines),
+            "size_bytes": target.stat().st_size
+        }
+    except Exception as e:
+        return {"filename": target.name, "lines": [f"Erreur lecture logs: {e}"], "total_lines": 0}
+
+@router.get("/api/admin/logs/files")
+def get_logs_files_list(_: AdminUser = Depends(get_current_admin)):
+    """Retourne la liste des logs quotidiens et des archives .tar.gz."""
+    return list_logs_and_archives()
+
+@router.post("/api/admin/logs/archive")
+def trigger_log_archive(
+    year: Optional[int] = None,
+    month: Optional[int] = None,
+    _: AdminUser = Depends(get_current_admin)
+):
+    """Déclenche la compression et l'archivage .tar.gz d'un mois."""
+    if year and month:
+        res = create_monthly_archive(year, month)
+    else:
+        res = archive_previous_month()
+    return res
+

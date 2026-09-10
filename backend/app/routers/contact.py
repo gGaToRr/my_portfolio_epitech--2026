@@ -2,9 +2,15 @@ import smtplib
 import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from fastapi import APIRouter, HTTPException, Request, status
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from app.config import settings
-from app.schemas import ContactRequest
+from app.database import get_db
+from app.models import ContactMessage, AdminUser
+from app.schemas import ContactRequest, ContactMessageOut
+from app.auth import get_current_admin
 from app.logger import log_success, log_error, log_warning
 
 router = APIRouter(tags=["Contact"])
@@ -45,7 +51,7 @@ def healthcheck():
     }
 
 @router.post("/api/contact")
-def send_contact_message(payload: ContactRequest, request: Request):
+def send_contact_message(payload: ContactRequest, request: Request, db: Session = Depends(get_db)):
     client_ip = request.headers.get("x-forwarded-for") or (request.client.host if request.client else "unknown")
     if "," in client_ip:
         client_ip = client_ip.split(",")[0].strip()
@@ -70,6 +76,22 @@ def send_contact_message(payload: ContactRequest, request: Request):
     if not name or not email or not msg:
         log_error("contact.py", "send_contact_message", f"Rejet du message - Validation échouée (champs requis vides, IP: {client_ip})")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tous les champs requis doivent être remplis.")
+
+    # Enregistrement en base SQLite
+    try:
+        new_msg = ContactMessage(
+            name=name,
+            email=email,
+            phone=phone,
+            message=msg,
+            client_ip=client_ip,
+            is_read=False,
+        )
+        db.add(new_msg)
+        db.commit()
+        db.refresh(new_msg)
+    except Exception as db_err:
+        log_error("contact.py", "send_contact_message", f"Erreur enregistrement message DB: {db_err}")
 
     is_smtp_ready = bool(
         settings.SMTP_HOST and
@@ -118,3 +140,43 @@ def send_contact_message(payload: ContactRequest, request: Request):
         log_success("contact.py", "send_contact_message", f"Message local reçu avec succès de '{name}' <{email}> (Tél: {phone})")
 
     return {"success": True, "message": "Votre message a bien été envoyé !"}
+
+# -------------------------------------------------------------
+# Admin Endpoints pour la gestion des messages de contact
+# -------------------------------------------------------------
+@router.get("/api/admin/messages", response_model=List[ContactMessageOut])
+def get_contact_messages(
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin)
+):
+    messages = db.query(ContactMessage).order_by(desc(ContactMessage.created_at)).all()
+    log_success("contact.py", "get_contact_messages", f"{len(messages)} messages consultés par '{admin.username}'")
+    return messages
+
+@router.patch("/api/admin/messages/{message_id}/read", status_code=status.HTTP_200_OK)
+def mark_message_as_read(
+    message_id: int,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin)
+):
+    msg = db.query(ContactMessage).filter(ContactMessage.id == message_id).first()
+    if not msg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message introuvable.")
+    msg.is_read = not msg.is_read
+    db.commit()
+    return {"success": True, "is_read": msg.is_read}
+
+@router.delete("/api/admin/messages/{message_id}", status_code=status.HTTP_200_OK)
+def delete_contact_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    admin: AdminUser = Depends(get_current_admin)
+):
+    msg = db.query(ContactMessage).filter(ContactMessage.id == message_id).first()
+    if not msg:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Message introuvable.")
+    db.delete(msg)
+    db.commit()
+    log_success("contact.py", "delete_contact_message", f"Message ID {message_id} supprimé par '{admin.username}'")
+    return {"success": True, "message": "Message supprimé."}
+

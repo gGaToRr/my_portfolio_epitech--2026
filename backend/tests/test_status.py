@@ -79,3 +79,9 @@ def test_db_health_probe():
     assert health["status"] == "connected"
     assert "latency_ms" in health
     assert health["type"] == "SQLite"
+
+def test_smtp_health_probe():
+    health = metrics_tracker.check_smtp_health()
+    assert "status" in health
+    assert "is_active" in health
+    assert "label" in health

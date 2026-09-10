@@ -99,11 +99,13 @@ class AnalyticsStatsSummary(BaseModel):
     unique_visitors: int
     today_pageviews: int
     today_unique_visitors: int
+    total_cv_downloads: int = 0
     top_pages: List[Dict[str, Any]]
     top_referrers: List[Dict[str, Any]]
     device_breakdown: List[Dict[str, Any]]
     recent_events: List[Dict[str, Any]]
     views_per_day: List[Dict[str, Any]]
+    recent_cv_downloads: List[Dict[str, Any]] = Field(default_factory=list)
 
 # ----------------- Contact Schema -----------------
 class ContactRequest(BaseModel):
@@ -112,3 +114,16 @@ class ContactRequest(BaseModel):
     phone: Optional[str] = None
     message: str
     botcheck: Optional[Any] = None
+
+class ContactMessageOut(BaseModel):
+    id: int
+    name: str
+    email: str
+    phone: Optional[str] = None
+    message: str
+    client_ip: Optional[str] = None
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+

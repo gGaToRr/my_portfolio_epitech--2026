@@ -1,20 +1,24 @@
 import os
+import tempfile
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Force test configuration
+# Force isolated test configuration
+_test_tmp_dir = tempfile.mkdtemp()
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["ADMIN_USERNAME"] = "testadmin"
 os.environ["ADMIN_PASSWORD"] = "testpassword123"
 os.environ["SECRET_KEY"] = "test-secret-key-for-unit-tests-123456789"
+os.environ["LOG_FILE"] = os.path.join(_test_tmp_dir, "test_portfolio.log")
 
 from app.database import Base, get_db
 from app.main import app
 from app.models import AdminUser
 from app.auth import hash_password, create_access_token
+from app.metrics import metrics_tracker
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
@@ -24,6 +28,13 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@pytest.fixture(autouse=True)
+def reset_metrics():
+    """Reset metrics tracker so test bug reports never pollute live stats."""
+    metrics_tracker.clear_bugs()
+    yield
+    metrics_tracker.clear_bugs()
 
 @pytest.fixture(scope="function")
 def db_session():
