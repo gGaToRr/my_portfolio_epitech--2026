@@ -26,10 +26,21 @@ class SystemMetricsTracker:
         self.client_errors: int = 0        # 4xx
         self.server_errors: int = 0        # 5xx
         self.recent_errors: deque = deque(maxlen=max_recent_errors)
+        # Compteur monotone : `len(recent_errors) + 1` plafonnait à 51 une fois
+        # le deque plein, et tous les bugs suivants recevaient le même id.
+        self._bug_sequence: int = 0
         
         # Tracking journalier en direct
         self.daily_metrics: Dict[str, Dict[str, int]] = {}
         self._lock = threading.Lock()
+
+        # Cache court du scan Docker : `docker ps` est un sous-processus, et
+        # get_status_summary() en lançait deux par requête (un pour lui, un pour
+        # get_daily_history()). Sur une route publique interrogée toutes les
+        # 10 s, cela faisait autant de processus créés pour rien.
+        self._docker_cache: Optional[Dict[str, Dict[str, Any]]] = None
+        self._docker_cache_at: float = 0.0
+        self.DOCKER_CACHE_TTL = 5.0
 
         # Initialisation du heartbeat et détection d'arrêt passé
         self._init_heartbeat_system()
@@ -122,8 +133,9 @@ class SystemMetricsTracker:
 
     def record_bug(self, error_type: str, message: str, path: str = "/", client_ip: str = "unknown"):
         with self._lock:
+            self._bug_sequence += 1
             bug_entry = {
-                "id": len(self.recent_errors) + 1,
+                "id": self._bug_sequence,
                 "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
                 "error_type": error_type,
                 "message": message[:500],
@@ -156,7 +168,11 @@ class SystemMetricsTracker:
         return ", ".join(parts)
 
     def _get_docker_containers(self) -> Dict[str, Dict[str, Any]]:
-        """Scanne rapidement les conteneurs Docker présents et leur état."""
+        """Scanne les conteneurs Docker présents et leur état (résultat mis en cache)."""
+        now = time.time()
+        if self._docker_cache is not None and (now - self._docker_cache_at) < self.DOCKER_CACHE_TTL:
+            return self._docker_cache
+
         containers = {}
         try:
             res = subprocess.run(
@@ -186,6 +202,9 @@ class SystemMetricsTracker:
                         }
         except Exception:
             pass
+
+        self._docker_cache = containers
+        self._docker_cache_at = now
         return containers
 
     def _probe_tcp_port(self, port: int, host: str = "127.0.0.1", timeout: float = 0.4) -> tuple[bool, Optional[float]]:
@@ -388,8 +407,19 @@ class SystemMetricsTracker:
             session.close()
         return self.start_datetime.date()
 
-    def get_daily_history(self, max_days: int = 65) -> Dict[str, List[Dict[str, Any]]]:
-        """Génère l'historique uniquement à partir du premier jour de configuration jusqu'à aujourd'hui."""
+    def get_daily_history(
+        self,
+        max_days: int = 65,
+        health: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Génère l'historique du premier jour de configuration jusqu'à aujourd'hui.
+
+        `health` permet de réutiliser les sondes déjà calculées par
+        get_status_summary(). Sans lui, les cinq sondes (base, backend, API,
+        frontend, SMTP — dont jusqu'à cinq connexions TCP) étaient exécutées une
+        seconde fois pour la même requête.
+        """
         today_date = datetime.now(timezone.utc).date()
         start_date = self.get_system_start_date()
 
@@ -411,22 +441,30 @@ class SystemMetricsTracker:
         finally:
             session.close()
 
-        # Scanner global Docker unique pour performance
-        docker_containers = self._get_docker_containers()
+        # Sondes réutilisées si l'appelant les a déjà faites, sinon calculées ici.
+        if health is None:
+            docker_containers = self._get_docker_containers()
+            health = {
+                "database": self.check_db_health(),
+                "backend": self.check_backend_health(docker_containers),
+                "api": self.check_api_health(),
+                "frontend": self.check_frontend_health(docker_containers),
+                "smtp": self.check_smtp_health(docker_containers),
+            }
 
-        db_health = self.check_db_health()
+        db_health = health["database"]
         db_is_up = db_health.get("is_active", True)
 
-        backend_health = self.check_backend_health(docker_containers)
+        backend_health = health["backend"]
         backend_is_up = backend_health.get("is_active", True)
 
-        api_health = self.check_api_health()
+        api_health = health["api"]
         api_is_up = api_health.get("is_active", True)
 
-        front_health = self.check_frontend_health(docker_containers)
+        front_health = health["frontend"]
         front_is_up = front_health.get("is_active", True)
 
-        smtp_health = self.check_smtp_health(docker_containers)
+        smtp_health = health["smtp"]
         smtp_is_up = smtp_health.get("is_active", False)
 
         history_general = []
@@ -660,10 +698,18 @@ class SystemMetricsTracker:
         api_info = self.check_api_health()
         front_info = self.check_frontend_health(docker_containers)
         smtp_info = self.check_smtp_health(docker_containers)
+        health = {
+            "database": db_info,
+            "backend": backend_info,
+            "api": api_info,
+            "frontend": front_info,
+            "smtp": smtp_info,
+        }
 
         is_healthy = db_info.get("is_active", True) and backend_info.get("is_active", True) and server_err == 0
         overall_status = "operational" if is_healthy else ("degraded" if db_info.get("is_active", True) else "critical")
-        history = self.get_daily_history(max_days=65)
+        # On passe les sondes déjà faites plutôt que de les relancer.
+        history = self.get_daily_history(max_days=65, health=health)
 
         return {
             "status": overall_status,
