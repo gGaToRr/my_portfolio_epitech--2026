@@ -14,7 +14,8 @@
     width: 100%;
     box-sizing: border-box;
     transition: var(--transition-theme), border-color 0.25s ease, box-shadow 0.25s ease, padding 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    margin-bottom: 16px;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .admin-uptime-card:hover {

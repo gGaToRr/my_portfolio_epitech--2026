@@ -10,23 +10,33 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    background: transparent;
-    border: none;
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 10px 18px 8px;
+    padding: 12px 18px 8px;
     margin-bottom: 0;
     position: relative;
     overflow: hidden;
     user-select: none;
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease;
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: var(--transition-theme), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .admin-pixel-pet-card:hover {
-    background: rgba(255, 255, 255, 0.02);
+    border-color: var(--border-strong);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .admin-pixel-pet-card {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
 }
 
 [data-theme="light"] .admin-pixel-pet-card:hover {
-    background: rgba(15, 23, 42, 0.02);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
 }
 
 /* En-tête de la carte : Score en haut à gauche, Boutons en haut à droite */
@@ -35,9 +45,10 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    margin-bottom: 12px;
-    gap: 16px;
+    margin-bottom: 8px;
+    gap: 12px;
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 /* Compteur de Victoires dans le coin supérieur gauche */
@@ -208,11 +219,14 @@
     width: 100%;
     height: 100%;
     flex: 1;
-    min-height: 200px;
+    min-height: 0;
     position: relative;
     overflow: hidden;
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
 }
 
 .admin-pixel-pet-canvas {
@@ -275,6 +289,7 @@
     font-size: 0.76rem;
     font-family: monospace, sans-serif;
     color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 .admin-pixel-pet-status-msg {

@@ -223,20 +223,16 @@ export function usePixelGameEngine() {
 
         const updateSize = () => {
             const wrap = canvas.parentElement;
-            const wrapRect = wrap ? wrap.getBoundingClientRect() : null;
-            const containerRect = container.getBoundingClientRect();
+            if (!wrap) return;
 
-            const measuredWidth = wrapRect && wrapRect.width > 0 ? wrapRect.width : containerRect.width;
-            const measuredHeight = wrapRect && wrapRect.height > 50
-                ? wrapRect.height
-                : (containerRect.height > 100 ? containerRect.height - 85 : 320);
+            const rect = wrap.getBoundingClientRect();
+            const measuredWidth = Math.round(rect.width || wrap.clientWidth);
+            const measuredHeight = Math.round(rect.height || wrap.clientHeight);
 
-            if (measuredWidth > 0) {
-                const targetW = Math.round(measuredWidth);
-                const targetH = Math.max(160, Math.round(measuredHeight));
-                if (canvas.width !== targetW || canvas.height !== targetH) {
-                    canvas.width = targetW;
-                    canvas.height = targetH;
+            if (measuredWidth > 0 && measuredHeight > 0) {
+                if (canvas.width !== measuredWidth || canvas.height !== measuredHeight) {
+                    canvas.width = measuredWidth;
+                    canvas.height = measuredHeight;
                 }
             }
 
