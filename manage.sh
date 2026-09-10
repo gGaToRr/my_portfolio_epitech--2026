@@ -27,10 +27,9 @@ BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PID_DIR="$ROOT_DIR/.pids"
 LOGS_DIR="$ROOT_DIR/backend/logs"
 ARCHIVES_DIR="$LOGS_DIR/archives"
-mkdir -p "$PID_DIR" "$LOGS_DIR" "$ARCHIVES_DIR"
+mkdir -p "$LOGS_DIR" "$ARCHIVES_DIR"
 
 show_banner() {
     echo -e "${CYAN}${BOLD}"
@@ -38,6 +37,17 @@ show_banner() {
     echo "  ║         PORTFOLIO PIERRE UNTERSINGER - GESTIONNAIRE        ║"
     echo "  ╚════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
+}
+
+# 0. NETTOYAGE DES TRACES & CACHES
+cleanup_traces() {
+    echo -e "${CYAN}🧹 Nettoyage des traces temporaires et caches...${NC}"
+    find "$ROOT_DIR/backend" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+    find "$ROOT_DIR/backend" -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+    find "$ROOT_DIR" -type f -name "*.pyc" -delete 2>/dev/null || true
+    find "$ROOT_DIR" -type f -name ".DS_Store" -delete 2>/dev/null || true
+    rm -rf "$ROOT_DIR/.pids" 2>/dev/null || true
+    echo -e "${GREEN}✓ Traces et caches nettoyés.${NC}"
 }
 
 # 1. DÉMARRAGE DES SERVICES
@@ -49,15 +59,13 @@ service_start() {
     # 1.1 Backend FastAPI
     if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
         BACKEND_PID=$(lsof -ti:5001 | head -n1)
-        echo $BACKEND_PID > "$PID_DIR/backend.pid"
-        echo -e "${YELLOW}⚠️  Backend déjà en cours d'exécution (PID $BACKEND_PID)${NC}"
+        echo -e "${YELLOW}⚠️  Backend déjà en cours d'exécution sur le port 5001 (PID $BACKEND_PID)${NC}"
     else
         echo -e "${CYAN}▶ Démarrage du Backend FastAPI (Port 5001)...${NC}"
         cd "$ROOT_DIR/backend"
         if [ -f "venv/bin/python" ]; then
             setsid venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 5001 > "$LOGS_DIR/portfolio.log" 2>&1 &
             BACKEND_PID=$!
-            echo $BACKEND_PID > "$PID_DIR/backend.pid"
             echo -e "${GREEN}✓ Backend FastAPI démarré (PID $BACKEND_PID)${NC}"
         else
             echo -e "${RED}❌ venv introuvable dans backend/venv. Initialisation requise.${NC}"
@@ -67,14 +75,12 @@ service_start() {
     # 1.2 Frontend React
     if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
         FRONTEND_PID=$(lsof -ti:3006 | head -n1)
-        echo $FRONTEND_PID > "$PID_DIR/frontend.pid"
-        echo -e "${YELLOW}⚠️  Frontend déjà en cours d'exécution (PID $FRONTEND_PID)${NC}"
+        echo -e "${YELLOW}⚠️  Frontend déjà en cours d'exécution sur le port 3006 (PID $FRONTEND_PID)${NC}"
     else
         echo -e "${CYAN}▶ Démarrage du Frontend React (Port 3006)...${NC}"
         cd "$ROOT_DIR/portfolio-v1.2.0/portfo"
-        PORT=3006 BROWSER=none setsid npm start > "$PID_DIR/frontend.log" 2>&1 &
+        PORT=3006 BROWSER=none setsid npm start > "$LOGS_DIR/frontend.log" 2>&1 &
         FRONTEND_PID=$!
-        echo $FRONTEND_PID > "$PID_DIR/frontend.pid"
         echo -e "${GREEN}✓ Frontend React démarré (PID $FRONTEND_PID)${NC}"
     fi
 
@@ -96,34 +102,27 @@ service_stop() {
     echo -e "${CYAN}===================================================${NC}"
 
     # Arrêt Backend
-    if [ -f "$PID_DIR/backend.pid" ]; then
-        BACKEND_PID=$(cat "$PID_DIR/backend.pid")
-        if kill -0 "$BACKEND_PID" 2>/dev/null; then
-            echo -e "${YELLOW}Arrêt du Backend (PID $BACKEND_PID)...${NC}"
-            kill "$BACKEND_PID" 2>/dev/null || true
-            sleep 1
-            kill -9 "$BACKEND_PID" 2>/dev/null || true
-        fi
-        rm -f "$PID_DIR/backend.pid"
+    if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
+        BACKEND_PIDS=$(lsof -ti:5001)
+        echo -e "${YELLOW}Arrêt du Backend sur le port 5001 (PID $BACKEND_PIDS)...${NC}"
+        kill $BACKEND_PIDS 2>/dev/null || true
+        sleep 1
+        lsof -ti:5001 | xargs -r kill -9 2>/dev/null || true
     fi
-    lsof -ti:5001 | xargs -r kill -9 2>/dev/null || true
     echo -e "${GREEN}✓ Backend arrêté.${NC}"
 
     # Arrêt Frontend
-    if [ -f "$PID_DIR/frontend.pid" ]; then
-        FRONTEND_PID=$(cat "$PID_DIR/frontend.pid")
-        if kill -0 "$FRONTEND_PID" 2>/dev/null; then
-            echo -e "${YELLOW}Arrêt du Frontend (PID $FRONTEND_PID)...${NC}"
-            kill -- -"$FRONTEND_PID" 2>/dev/null || kill "$FRONTEND_PID" 2>/dev/null || true
-            sleep 1
-            kill -9 "$FRONTEND_PID" 2>/dev/null || true
-        fi
-        rm -f "$PID_DIR/frontend.pid"
+    if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
+        FRONTEND_PIDS=$(lsof -ti:3006)
+        echo -e "${YELLOW}Arrêt du Frontend sur le port 3006 (PID $FRONTEND_PIDS)...${NC}"
+        kill $FRONTEND_PIDS 2>/dev/null || true
+        sleep 1
+        lsof -ti:3006 | xargs -r kill -9 2>/dev/null || true
     fi
-    lsof -ti:3006 | xargs -r kill -9 2>/dev/null || true
     echo -e "${GREEN}✓ Frontend arrêté.${NC}"
 
     echo -e "${GREEN}✓ Tous les services sont arrêtés et les ports libérés.${NC}"
+    cleanup_traces
     echo -e "${CYAN}===================================================${NC}"
 }
 
@@ -142,20 +141,14 @@ service_status() {
 
     # Backend
     BACKEND_STATUS="${RED}INACTIF${NC}"
-    if [ -f "$PID_DIR/backend.pid" ] && kill -0 "$(cat "$PID_DIR/backend.pid")" 2>/dev/null; then
-        BACKEND_PID=$(cat "$PID_DIR/backend.pid")
-        BACKEND_STATUS="${GREEN}ACTIF (PID $BACKEND_PID)${NC}"
-    elif lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
+    if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
         BACKEND_PID=$(lsof -ti:5001 | head -n1)
         BACKEND_STATUS="${GREEN}ACTIF sur port 5001 (PID $BACKEND_PID)${NC}"
     fi
 
     # Frontend
     FRONTEND_STATUS="${RED}INACTIF${NC}"
-    if [ -f "$PID_DIR/frontend.pid" ] && kill -0 "$(cat "$PID_DIR/frontend.pid")" 2>/dev/null; then
-        FRONTEND_PID=$(cat "$PID_DIR/frontend.pid")
-        FRONTEND_STATUS="${GREEN}ACTIF (PID $FRONTEND_PID)${NC}"
-    elif lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
+    if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
         FRONTEND_PID=$(lsof -ti:3006 | head -n1)
         FRONTEND_STATUS="${GREEN}ACTIF sur port 3006 (PID $FRONTEND_PID)${NC}"
     fi
@@ -196,7 +189,16 @@ service_status() {
 # 5. SUIVI DES LOGS
 service_logs() {
     LOG_FILE="$LOGS_DIR/portfolio.log"
-    echo -e "${CYAN}📄 Suivi des logs en temps réel (${LOG_FILE})... (Ctrl+C pour quitter)${NC}"
+    echo -e "${CYAN}📄 Suivi des logs Backend en direct (${LOG_FILE})... (Ctrl+C pour quitter)${NC}"
+    if [ ! -f "$LOG_FILE" ]; then
+        touch "$LOG_FILE"
+    fi
+    tail -f "$LOG_FILE"
+}
+
+service_logs_front() {
+    LOG_FILE="$LOGS_DIR/frontend.log"
+    echo -e "${CYAN}📄 Suivi des logs Frontend en direct (${LOG_FILE})... (Ctrl+C pour quitter)${NC}"
     if [ ! -f "$LOG_FILE" ]; then
         touch "$LOG_FILE"
     fi
@@ -208,6 +210,7 @@ service_test() {
     echo -e "${CYAN}🧪 Exécution de la suite complète de tests unitaires & intégration...${NC}"
     cd "$ROOT_DIR"
     PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/pytest" "$ROOT_DIR/backend/tests/" -v
+    cleanup_traces
 }
 
 # 7. ARCHIVAGE MENSUEL DES LOGS
@@ -223,7 +226,7 @@ service_smtp() {
     echo -e "${CYAN}===================================================${NC}"
     echo -e "${CYAN}📧 Diagnostic et Configuration SMTP${NC}"
     echo -e "${CYAN}===================================================${NC}"
-    
+
     if curl -s -f http://localhost:5001/api/health >/dev/null 2>&1; then
         HEALTH_RES=$(curl -s http://localhost:5001/api/health)
         echo -e " • Endpoint Healthcheck API : ${GREEN}En ligne${NC}"
@@ -242,13 +245,15 @@ interactive_menu() {
     echo -e "  ${BOLD}2)${NC} ${RED}🛑 Arrêter les services${NC} (stop / down)"
     echo -e "  ${BOLD}3)${NC} ${YELLOW}🔄 Redémarrer les services${NC} (restart)"
     echo -e "  ${BOLD}4)${NC} ${CYAN}📊 Statut & Sondes de santé${NC} (status)"
-    echo -e "  ${BOLD}5)${NC} ${BLUE}📄 Suivre les logs en direct${NC} (logs)"
-    echo -e "  ${BOLD}6)${NC} ${MAGENTA}🧪 Lancer les tests pytest${NC} (test)"
-    echo -e "  ${BOLD}7)${NC} ${CYAN}📦 Archiver les logs mensuels (.tar.gz)${NC} (archive-logs)"
-    echo -e "  ${BOLD}8)${NC} ${YELLOW}📧 Diagnostic SMTP${NC} (smtp)"
+    echo -e "  ${BOLD}5)${NC} ${BLUE}📄 Suivre les logs Backend${NC} (logs)"
+    echo -e "  ${BOLD}6)${NC} ${BLUE}📄 Suivre les logs Frontend${NC} (logs-front)"
+    echo -e "  ${BOLD}7)${NC} ${MAGENTA}🧪 Lancer les tests pytest${NC} (test)"
+    echo -e "  ${BOLD}8)${NC} ${CYAN}🧹 Nettoyer caches & traces${NC} (clean)"
+    echo -e "  ${BOLD}9)${NC} ${CYAN}📦 Archiver les logs mensuels (.tar.gz)${NC} (archive-logs)"
+    echo -e "  ${BOLD}10)${NC} ${YELLOW}📧 Diagnostic SMTP${NC} (smtp)"
     echo -e "  ${BOLD}q)${NC} Quitter"
     echo ""
-    read -rp "Choix [1-8/q] : " choice
+    read -rp "Choix [1-10/q] : " choice
 
     case "$choice" in
         1) service_start ;;
@@ -256,9 +261,11 @@ interactive_menu() {
         3) service_restart ;;
         4) service_status ;;
         5) service_logs ;;
-        6) service_test ;;
-        7) service_archive_logs ;;
-        8) service_smtp ;;
+        6) service_logs_front ;;
+        7) service_test ;;
+        8) cleanup_traces ;;
+        9) service_archive_logs ;;
+        10) service_smtp ;;
         q|Q) echo "Sortie."; exit 0 ;;
         *) echo -e "${RED}Option invalide.${NC}"; exit 1 ;;
     esac
@@ -283,8 +290,14 @@ case "$COMMAND" in
     logs)
         service_logs
         ;;
+    logs-front)
+        service_logs_front
+        ;;
     test)
         service_test
+        ;;
+    clean)
+        cleanup_traces
         ;;
     archive-logs|rotate-logs)
         service_archive_logs
@@ -294,14 +307,14 @@ case "$COMMAND" in
         ;;
     help|--help|-h)
         show_banner
-        echo "Usage: ./manage.sh [start|stop|restart|status|logs|test|archive-logs|smtp]"
+        echo "Usage: ./manage.sh [start|stop|restart|status|logs|logs-front|test|clean|archive-logs|smtp]"
         ;;
     "")
         interactive_menu
         ;;
     *)
         echo -e "${RED}Commande inconnue : '$COMMAND'${NC}"
-        echo "Usage: ./manage.sh [start|stop|restart|status|logs|test|archive-logs|smtp]"
+        echo "Usage: ./manage.sh [start|stop|restart|status|logs|logs-front|test|clean|archive-logs|smtp]"
         exit 1
         ;;
 esac

@@ -29,7 +29,6 @@ import {
     playNukeExplosionSound,
 } from '../audio/retroAudio';
 import {
-    CANVAS_HEIGHT,
     PIXEL_SCALE,
     GROUND_PADDING,
     INITIAL_CLOUDS,
@@ -223,18 +222,45 @@ export function usePixelGameEngine() {
         let animationFrameId;
 
         const updateSize = () => {
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = CANVAS_HEIGHT;
-            if (stateRef.current.cowboyX === 0) {
-                stateRef.current.cowboyX = rect.width - 130;
+            const wrap = canvas.parentElement;
+            const wrapRect = wrap ? wrap.getBoundingClientRect() : null;
+            const containerRect = container.getBoundingClientRect();
+
+            const measuredWidth = wrapRect && wrapRect.width > 0 ? wrapRect.width : containerRect.width;
+            const measuredHeight = wrapRect && wrapRect.height > 50
+                ? wrapRect.height
+                : (containerRect.height > 100 ? containerRect.height - 85 : 320);
+
+            if (measuredWidth > 0) {
+                const targetW = Math.round(measuredWidth);
+                const targetH = Math.max(160, Math.round(measuredHeight));
+                if (canvas.width !== targetW || canvas.height !== targetH) {
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                }
+            }
+
+            if (stateRef.current.cowboyX === 0 && canvas.width > 0) {
+                stateRef.current.cowboyX = canvas.width - 130;
                 stateRef.current.spideyX = -60;
-                stateRef.current.kermitX = rect.width / 2;
+                stateRef.current.kermitX = canvas.width / 2;
             }
         };
 
         updateSize();
         window.addEventListener('resize', updateSize);
+
+        let resizeObserver = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(() => {
+                updateSize();
+            });
+            if (canvas.parentElement) {
+                resizeObserver.observe(canvas.parentElement);
+            } else {
+                resizeObserver.observe(container);
+            }
+        }
 
         const render = () => {
             const s = stateRef.current;
@@ -1179,6 +1205,7 @@ export function usePixelGameEngine() {
         render();
 
         return () => {
+            if (resizeObserver) resizeObserver.disconnect();
             window.removeEventListener('resize', updateSize);
             cancelAnimationFrame(animationFrameId);
         };
