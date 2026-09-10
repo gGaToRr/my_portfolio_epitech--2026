@@ -8,7 +8,7 @@ import {
 } from '../../services/api';
 import './AdminInfoCards.css';
 
-export default function AdminInfoCards({ customCards }) {
+export default function AdminInfoCards({ customCards, onSelectTab }) {
     const [analytics, setAnalytics] = useState(null);
     const [persoProjectsCount, setPersoProjectsCount] = useState(null);
     const [epitechProjectsCount, setEpitechProjectsCount] = useState(null);
@@ -231,11 +231,32 @@ export default function AdminInfoCards({ customCards }) {
         <div className="admin-info-grid">
             {cards.map((card) => {
                 const variantClass = card.variant ? `admin-info-card--${card.variant}` : '';
+                const isLogsCard = card.id === 'card-logs';
 
                 return (
-                    <div key={card.id} className={`admin-info-card ${variantClass}`}>
+                    <div 
+                        key={card.id} 
+                        className={`admin-info-card ${variantClass} ${isLogsCard ? 'admin-info-card--clickable' : ''}`}
+                        onClick={() => {
+                            if (isLogsCard && onSelectTab) {
+                                onSelectTab('logs');
+                            }
+                        }}
+                        role={isLogsCard ? 'button' : undefined}
+                        tabIndex={isLogsCard ? 0 : undefined}
+                        title={isLogsCard ? 'Cliquer pour ouvrir la console des logs' : undefined}
+                        onKeyDown={(e) => {
+                            if ((e.key === 'Enter' || e.key === ' ') && isLogsCard && onSelectTab) {
+                                e.preventDefault();
+                                onSelectTab('logs');
+                            }
+                        }}
+                    >
                         <div className="admin-info-card__header">
                             <span className="admin-info-card__title">{card.title}</span>
+                            {isLogsCard && (
+                                <span className="admin-info-card__link-icon" title="Ouvrir les logs">↗</span>
+                            )}
                         </div>
 
                         <div className="admin-info-card__body">

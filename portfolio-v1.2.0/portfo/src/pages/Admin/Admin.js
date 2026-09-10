@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import AdminUptime from '../../components/AdminUptime/AdminUptime';
 import AdminInfoCards from '../../components/AdminInfoCards/AdminInfoCards';
+import AdminLogs from '../../components/AdminLogs/AdminLogs';
 import PixelPetGame from '../../features/PixelGame/PixelPetGame';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 import { loginAdmin, logoutAdmin, verifyAdminAuth } from '../../services/api';
@@ -246,7 +247,7 @@ export default function Admin({ theme, onToggleTheme }) {
                             isExpanded={isUptimeExpanded}
                             onToggleExpand={() => setIsUptimeExpanded((prev) => !prev)}
                         />
-                        <AdminInfoCards />
+                        <AdminInfoCards onSelectTab={(tabId) => setActiveTab(tabId)} />
                         <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
                             <PixelPetGame />
                         </div>
@@ -264,7 +265,7 @@ export default function Admin({ theme, onToggleTheme }) {
                 )}
                 {activeTab === 'logs' && (
                     <section className="admin-page-view admin-page-logs">
-                        {/* Page Logs vide */}
+                        <AdminLogs onBack={() => setActiveTab('main')} />
                     </section>
                 )}
                 {activeTab === 'settings' && (

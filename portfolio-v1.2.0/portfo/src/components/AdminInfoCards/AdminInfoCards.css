@@ -35,6 +35,27 @@
     border-color: var(--border-strong);
 }
 
+.admin-info-card--clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.admin-info-card--clickable:hover {
+    border-color: var(--accent, #10b981);
+}
+
+.admin-info-card__link-icon {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.admin-info-card--clickable:hover .admin-info-card__link-icon {
+    color: var(--accent, #10b981);
+    transform: translate(2px, -2px);
+}
+
 /* Header de chaque carte (Titre & Tag) */
 .admin-info-card__header {
     display: flex;
