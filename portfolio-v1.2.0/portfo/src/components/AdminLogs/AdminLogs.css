@@ -79,7 +79,7 @@
 .admin-logs-back-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-strong);
@@ -96,32 +96,20 @@
     border-color: var(--border-strong);
 }
 
+.admin-logs-back-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.admin-logs-back-btn:hover svg {
+    transform: translateX(-2px);
+}
+
 .admin-logs-title {
     font-size: 1.35rem;
     font-weight: 700;
     color: var(--text-strong);
     margin: 0;
     letter-spacing: -0.01em;
-}
-
-.admin-logs-badge {
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: #10b981;
-}
-
-.admin-logs-cache-badge {
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: rgba(96, 165, 250, 0.12);
-    border: 1px solid rgba(96, 165, 250, 0.25);
-    color: #60a5fa;
 }
 
 /* Barre de sélection des jours en cache (Aujourd'hui + 4 jours précédents) */
@@ -148,6 +136,16 @@
     align-items: center;
     gap: 8px;
     transition: all 0.2s ease;
+}
+
+.admin-logs-day-icon {
+    opacity: 0.75;
+    transition: opacity 0.2s ease, stroke 0.2s ease;
+}
+
+.admin-logs-day-btn:hover .admin-logs-day-icon,
+.admin-logs-day-btn.is-active .admin-logs-day-icon {
+    opacity: 1;
 }
 
 .admin-logs-day-btn:hover {

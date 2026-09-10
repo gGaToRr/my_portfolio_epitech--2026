@@ -229,25 +229,46 @@ export default function AdminLogs({ onBack }) {
         return days.reduce((acc, d) => acc + (d.lines?.length || 0), 0);
     }, [days]);
 
+    // Formatage concis de la date (JJ/MM) pour l'affichage avec l'icône calendrier
+    const formatDayDate = (dateStr, fallbackLabel) => {
+        if (dateStr) {
+            try {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    return `${parts[2]}/${parts[1]}`;
+                }
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    return `${dd}/${mm}`;
+                }
+            } catch (_) {}
+        }
+        if (fallbackLabel) {
+            const match = fallbackLabel.match(/(\d{2}\/\d{2})/);
+            if (match) return match[1];
+        }
+        return dateStr || fallbackLabel || '';
+    };
+
     return (
         <div className="admin-logs-view">
             {/* 1. Bandeau supérieur séparé (Titre, Jours en cache, Filtres & Recherche) */}
             <div className="admin-logs-toolbar-card">
-                {/* En-tête sans emojis avec typographie agrandie */}
+                {/* En-tête épuré avec bouton retour SVG */}
                 <div className="admin-logs-header">
                     <div className="admin-logs-title-box">
                         {onBack && (
-                            <button type="button" className="admin-logs-back-btn" onClick={onBack}>
-                                ← Retour
+                            <button type="button" className="admin-logs-back-btn" onClick={onBack} title="Retourner au tableau de bord">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                                <span>Retour</span>
                             </button>
                         )}
                         <h2 className="admin-logs-title">Logs & Sécurité du serveur</h2>
-                        <span className="admin-logs-badge">
-                            {filteredLogs.length} logs affichés
-                        </span>
-                        <span className="admin-logs-cache-badge">
-                            Cache 5 jours ({totalCachedLines} lignes)
-                        </span>
                     </div>
 
                     <button
@@ -260,29 +281,46 @@ export default function AdminLogs({ onBack }) {
                     </button>
                 </div>
 
-                {/* Sélecteur de date (Cache 5 jours : Aujourd'hui + 4 précédents) */}
+                {/* Sélecteur de date avec icône SVG calendrier au lieu du texte aujourd'hui/hier/etc */}
                 <div className="admin-logs-days-bar">
                     <button
                         type="button"
                         className={`admin-logs-day-btn ${selectedDayKey === 'all' ? 'is-active' : ''}`}
                         onClick={() => setSelectedDayKey('all')}
+                        title="Afficher tous les logs des 5 derniers jours"
                     >
-                        Tous les 5 jours <span className="admin-logs-day-count">{totalCachedLines}</span>
+                        <svg className="admin-logs-day-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <span>5 jours</span>
+                        <span className="admin-logs-day-count">{totalCachedLines}</span>
                     </button>
-                    {days.map((day) => (
-                        <button
-                            key={day.filename}
-                            type="button"
-                            className={`admin-logs-day-btn ${selectedDayKey === day.filename ? 'is-active' : ''}`}
-                            onClick={() => setSelectedDayKey(day.filename)}
-                            title={`${day.filename} (${day.total_lines} lignes au total)`}
-                        >
-                            {day.label}
-                            <span className="admin-logs-day-count">
-                                {day.exists ? (day.lines?.length || 0) : '0'}
-                            </span>
-                        </button>
-                    ))}
+                    {days.map((day) => {
+                        const formattedDate = formatDayDate(day.date, day.label);
+                        return (
+                            <button
+                                key={day.filename}
+                                type="button"
+                                className={`admin-logs-day-btn ${selectedDayKey === day.filename ? 'is-active' : ''}`}
+                                onClick={() => setSelectedDayKey(day.filename)}
+                                title={`${day.label || day.filename} (${day.total_lines} lignes au total)`}
+                            >
+                                <svg className="admin-logs-day-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <span>{formattedDate}</span>
+                                <span className="admin-logs-day-count">
+                                    {day.exists ? (day.lines?.length || 0) : '0'}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* Barre d'outils (Recherche, filtres rapides, dropdowns customisés) */}
