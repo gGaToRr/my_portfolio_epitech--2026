@@ -55,18 +55,21 @@ export function usePixelGameEngine() {
         // Cowboy
         cowboyX: 0,
         cowboyY: 0,
+        cowboyDir: -1,
         cowboyFrame: 0,
         cowboyPowerup: null, // 'shield' | 'ak47'
         cowboyPowerupTimer: 0,
         // Spider-Man
-        spideyX: -100,
+        spideyX: 35,
         spideyY: 0,
+        spideyDir: 1,
         spideyFrame: 0,
         spideyPowerup: null,
         spideyPowerupTimer: 0,
         // Kermit the Frog
         kermitX: 200,
         kermitY: 0,
+        kermitDir: 1,
         kermitFrame: 0,
         kermitAttackFrame: 0,
         kermitDanceFrame: 0,
@@ -237,9 +240,12 @@ export function usePixelGameEngine() {
             }
 
             if (stateRef.current.cowboyX === 0 && canvas.width > 0) {
-                stateRef.current.cowboyX = canvas.width - 130;
-                stateRef.current.spideyX = -60;
-                stateRef.current.kermitX = canvas.width / 2;
+                stateRef.current.cowboyX = Math.max(60, canvas.width - 110);
+                stateRef.current.spideyX = 35;
+                stateRef.current.kermitX = Math.round(canvas.width / 2);
+                stateRef.current.cowboyDir = -1;
+                stateRef.current.spideyDir = 1;
+                stateRef.current.kermitDir = 1;
             }
         };
 
@@ -524,22 +530,31 @@ export function usePixelGameEngine() {
             // ----------------------------------------------------------------
             // 2. SOL
             // ----------------------------------------------------------------
-            ctx.strokeStyle = 'rgba(202, 138, 4, 0.32)';
-            ctx.lineWidth = 2.5;
+            // Subterranean earth fill to the bottom of the canvas
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.fillRect(0, groundY, w, Math.max(0, h - groundY));
+
+            // Solid pixelated ground border
+            ctx.strokeStyle = '#ca8a04';
+            ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(0, groundY);
             ctx.lineTo(w, groundY);
             ctx.stroke();
 
+            // Ground highlights and details (grass tufts & stone textures)
             for (let i = 0; i < w; i += 28) {
                 const seed = (i * 19) % 29;
                 if (seed < 8) {
-                    ctx.fillStyle = 'rgba(100, 116, 139, 0.45)';
-                    ctx.fillRect(i + 6, groundY + 2, 4, 2);
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillRect(i + 6, groundY + 4, 6, 3);
                 } else if (seed < 16) {
-                    ctx.fillStyle = 'rgba(34, 197, 94, 0.45)';
-                    ctx.fillRect(i + 8, groundY - 3, 2, 3);
-                    ctx.fillRect(i + 10, groundY - 5, 2, 5);
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(i + 8, groundY - 4, 3, 4);
+                    ctx.fillRect(i + 11, groundY - 6, 3, 6);
+                } else if (seed < 22) {
+                    ctx.fillStyle = '#eab308';
+                    ctx.fillRect(i + 4, groundY + 1, 4, 2);
                 }
             }
 
@@ -621,9 +636,9 @@ export function usePixelGameEngine() {
             // ----------------------------------------------------------------
             if (!s.nukeActive) {
                 const akUsers = [
-                    { name: 'cowboy', x: s.cowboyX, y: Math.round(groundY - 22 * pixelScale), dir: -1, timerKey: 'cowboyPowerupTimer', powerKey: 'cowboyPowerup' },
-                    { name: 'spidey', x: s.spideyX, y: Math.round(groundY - 19 * pixelScale), dir: 1, timerKey: 'spideyPowerupTimer', powerKey: 'spideyPowerup' },
-                    { name: 'kermit', x: s.kermitX, y: Math.round(groundY - 18 * pixelScale), dir: -1, timerKey: 'kermitPowerupTimer', powerKey: 'kermitPowerup' },
+                    { name: 'cowboy', x: s.cowboyX, y: Math.round(groundY - 22 * pixelScale), dir: s.cowboyDir || -1, timerKey: 'cowboyPowerupTimer', powerKey: 'cowboyPowerup' },
+                    { name: 'spidey', x: s.spideyX, y: Math.round(groundY - 19 * pixelScale), dir: s.spideyDir || 1, timerKey: 'spideyPowerupTimer', powerKey: 'spideyPowerup' },
+                    { name: 'kermit', x: s.kermitX, y: Math.round(groundY - 18 * pixelScale), dir: s.kermitDir || 1, timerKey: 'kermitPowerupTimer', powerKey: 'kermitPowerup' },
                 ];
 
                 for (const user of akUsers) {
@@ -831,16 +846,35 @@ export function usePixelGameEngine() {
                     setStatusText('Patrouille active : Cowboy, Spider-Man & Kermit');
                 }
             } else {
-                s.cowboyX -= 1.3;
-                if (s.cowboyX < -130) s.cowboyX = w + 80;
+                // Patrouille avec limites d'écran
+                s.cowboyX += (s.cowboyDir || -1) * 1.3;
+                if (s.cowboyX < 25) {
+                    s.cowboyX = 25;
+                    s.cowboyDir = 1;
+                } else if (s.cowboyX > w - 90) {
+                    s.cowboyX = w - 90;
+                    s.cowboyDir = -1;
+                }
 
-                s.spideyX += 1.15;
-                if (s.spideyX > w + 90) s.spideyX = -100;
+                s.spideyX += (s.spideyDir || 1) * 1.15;
+                if (s.spideyX < 25) {
+                    s.spideyX = 25;
+                    s.spideyDir = 1;
+                } else if (s.spideyX > w - 90) {
+                    s.spideyX = w - 90;
+                    s.spideyDir = -1;
+                }
 
-                s.kermitX -= 1.0;
-                if (s.kermitX < -120) s.kermitX = w + 120;
+                s.kermitX += (s.kermitDir || 1) * 1.0;
+                if (s.kermitX < 25) {
+                    s.kermitX = 25;
+                    s.kermitDir = 1;
+                } else if (s.kermitX > w - 90) {
+                    s.kermitX = w - 90;
+                    s.kermitDir = -1;
+                }
 
-                s.snakeX = s.cowboyX + 85;
+                s.snakeX = (s.cowboyDir || -1) === 1 ? s.cowboyX - 45 : s.cowboyX + 85;
             }
 
             if (s.walkTick % 6 === 0) {

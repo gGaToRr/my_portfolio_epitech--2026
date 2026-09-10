@@ -2,7 +2,6 @@ import React from 'react';
 import { usePixelGameEngine } from './engine/usePixelGameEngine';
 import PixelGameHeader from './components/PixelGameHeader';
 import PixelGameCanvas from './components/PixelGameCanvas';
-import PixelGameFooter from './components/PixelGameFooter';
 import './PixelPetGame.css';
 
 export default function PixelPetGame() {
@@ -15,7 +14,6 @@ export default function PixelPetGame() {
         battleCountdown,
         isFighting,
         isNukeRunning,
-        statusText,
         bubble,
         startBattle,
         triggerNuke,
@@ -35,8 +33,6 @@ export default function PixelPetGame() {
             />
 
             <PixelGameCanvas canvasRef={canvasRef} bubble={bubble} />
-
-            <PixelGameFooter statusText={statusText} cycleSeconds={60} />
         </div>
     );
 }

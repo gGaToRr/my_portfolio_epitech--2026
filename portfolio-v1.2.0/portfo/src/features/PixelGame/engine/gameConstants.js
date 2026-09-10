@@ -4,7 +4,7 @@
 
 export const CANVAS_HEIGHT = 240;
 export const PIXEL_SCALE = 4.8;
-export const GROUND_PADDING = 14;
+export const GROUND_PADDING = 36;
 
 export const AUTO_BATTLE_INTERVAL = 60; // 60 secondes
 export const NUKE_WIN_THRESHOLD = 1000;

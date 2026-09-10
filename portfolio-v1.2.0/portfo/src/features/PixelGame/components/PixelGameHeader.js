@@ -13,7 +13,6 @@ export default function PixelGameHeader({
     return (
         <div className="admin-pixel-pet-header">
             <div className="admin-pixel-pet-score-wrap">
-                <span className="admin-pixel-pet-score-pulse" />
                 <span className="admin-pixel-pet-score-title">VICTOIRES :</span>
                 <span className="admin-pixel-pet-score admin-pixel-pet-score--cowboy">
                     COWBOY {cowboyScore}
@@ -36,7 +35,7 @@ export default function PixelGameHeader({
                     className={`admin-pixel-fight-btn ${isFighting ? 'is-fighting' : ''}`}
                     title="Déclencher le combat pixel-art"
                 >
-                    {isFighting ? 'Combat en cours...' : `Lancer le combat (Auto : ${battleCountdown}s)`}
+                    {isFighting ? '⚔️ Combat...' : `⚔️ Combat (${battleCountdown}s)`}
                 </button>
 
                 <button
@@ -46,7 +45,7 @@ export default function PixelGameHeader({
                     className={`admin-pixel-nuke-btn ${isNukeRunning ? 'is-nuke-active' : ''}`}
                     title="Déclencher la NUKE Tactique (Remet les scores adverses à 0)"
                 >
-                    {isNukeRunning ? 'NUKE en cours...' : 'Lancer la NUKE'}
+                    {isNukeRunning ? '☢️ Nuke...' : '☢️ Nuke'}
                 </button>
             </div>
         </div>
