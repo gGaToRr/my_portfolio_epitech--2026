@@ -47,6 +47,13 @@ backend/data/*.sqlite
 backend/data/*.json
 backend/data/secret_key
 backend/data/admin_credentials.json
+
+# Les dossiers data/ et logs/ doivent exister apres un clone : sans eux, Docker
+# cree les points de montage en root et le conteneur, qui tourne sans
+# privileges, ne peut plus y ecrire. On garde donc les .gitkeep.
+!backend/data/.gitkeep
+!backend/logs/.gitkeep
+!backend/logs/archives/.gitkeep
 *.db
 *.sqlite3
 .pytest_cache/

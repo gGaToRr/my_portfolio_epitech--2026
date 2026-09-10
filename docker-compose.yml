@@ -5,6 +5,13 @@ services:
       dockerfile: Dockerfile
     container_name: portfolio_backend
     restart: unless-stopped
+    # Le conteneur écrit dans ./backend/data et ./backend/logs, montés depuis
+    # l'hôte. Il doit donc tourner avec l'uid propriétaire de ces dossiers,
+    # sinon l'écriture est refusée et le service ne démarre pas.
+    # 1000 couvre le premier compte non-root d'une machine Linux, le cas courant.
+    # Si vous déployez sous un autre compte : APP_UID / APP_GID dans .env,
+    # ou `id -u` / `id -g` pour connaître les vôtres.
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
     # Publié uniquement sur la boucle locale.
     #
     # "5001:5001" écoutait sur 0.0.0.0 : le backend était donc joignable

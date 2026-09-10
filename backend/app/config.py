@@ -1,13 +1,39 @@
+import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
 ARCHIVES_DIR = LOG_DIR / "archives"
-ARCHIVES_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _ensure_writable(directory: Path) -> None:
+    """
+    Crée un dossier de travail et vérifie qu'on peut y écrire.
+
+    Sans ce contrôle, un montage Docker appartenant à root produisait une
+    PermissionError brute au milieu d'une trace d'import — illisible pour
+    diagnostiquer, alors que la cause et le remède tiennent en deux lignes.
+    """
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        sonde = directory / ".write_test"
+        sonde.touch()
+        sonde.unlink()
+    except PermissionError as erreur:
+        raise PermissionError(
+            f"Ecriture impossible dans {directory}.\n"
+            f"  Le processus tourne en uid={os.getuid()}, le dossier appartient a "
+            f"uid={directory.stat().st_uid if directory.exists() else '?'}.\n"
+            "  En Docker : renseignez APP_UID et APP_GID dans .env avec la sortie de "
+            "`id -u` et `id -g`,\n"
+            "  ou corrigez le proprietaire : sudo chown -R $(id -u):$(id -g) backend/data backend/logs"
+        ) from erreur
+
+
+for _dossier in (DATA_DIR, LOG_DIR, ARCHIVES_DIR):
+    _ensure_writable(_dossier)
 
 class Settings(BaseSettings):
     APP_NAME: str = "Portfolio API & Analytics"
