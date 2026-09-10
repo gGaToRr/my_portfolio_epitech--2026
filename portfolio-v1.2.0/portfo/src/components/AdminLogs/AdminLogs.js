@@ -89,41 +89,18 @@ export default function AdminLogs({ onBack }) {
         }
     }, [linesCount]);
 
-    // Initialisation & actualisation
+    // Initialisation
     useEffect(() => {
-        loadAllRecentLogs();
+        loadAllRecentLogs(false);
     }, [loadAllRecentLogs]);
 
-    // Polling silencieux pour mettre à jour les logs du jour en arrière-plan sans bloquer l'UI
+    // Polling automatique et silencieux toutes les 5 secondes (actualisation temps réel sans bouton)
     useEffect(() => {
-        const interval = setInterval(async () => {
-            try {
-                const todayData = await fetchLiveLogs(linesCount);
-                if (todayData && Array.isArray(todayData.lines)) {
-                    const todayFilename = todayData.filename;
-                    if (logsCacheRef.current[todayFilename]) {
-                        logsCacheRef.current[todayFilename] = {
-                            ...logsCacheRef.current[todayFilename],
-                            lines: todayData.lines,
-                            total_lines: todayData.total_lines,
-                            size_bytes: todayData.size_bytes,
-                            cachedAt: Date.now(),
-                        };
-                        setDays((prev) =>
-                            prev.map((d) =>
-                                d.filename === todayFilename
-                                    ? { ...d, lines: todayData.lines, total_lines: todayData.total_lines }
-                                    : d
-                            )
-                        );
-                    }
-                }
-            } catch (err) {
-                // Ignore silent refresh errors
-            }
-        }, 8000);
+        const interval = setInterval(() => {
+            loadAllRecentLogs(true);
+        }, 5000);
         return () => clearInterval(interval);
-    }, [linesCount]);
+    }, [loadAllRecentLogs]);
 
     // Calcul des logs actifs selon le jour sélectionné (Depuis le cache mémoire)
     const activeLogs = useMemo(() => {
@@ -285,29 +262,25 @@ export default function AdminLogs({ onBack }) {
         <div className="admin-logs-view">
             {/* 1. Bandeau supérieur séparé (Titre, Filtres, Menus déroulants & Recherche) */}
             <div className="admin-logs-toolbar-card">
-                {/* En-tête épuré avec bouton retour SVG */}
+                {/* En-tête épuré avec bouton retour SVG seul */}
                 <div className="admin-logs-header">
                     <div className="admin-logs-title-box">
                         {onBack && (
-                            <button type="button" className="admin-logs-back-btn" onClick={onBack} title="Retourner au tableau de bord">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                            <button
+                                type="button"
+                                className="admin-logs-back-btn"
+                                onClick={onBack}
+                                title="Retour au tableau de bord"
+                                aria-label="Retour au tableau de bord"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                                     <line x1="19" y1="12" x2="5" y2="12"></line>
                                     <polyline points="12 19 5 12 12 5"></polyline>
                                 </svg>
-                                <span>Retour</span>
                             </button>
                         )}
                         <h2 className="admin-logs-title">Logs & Sécurité du serveur</h2>
                     </div>
-
-                    <button
-                        type="button"
-                        className="admin-logs-refresh-btn"
-                        onClick={() => loadAllRecentLogs(false)}
-                        disabled={loading}
-                    >
-                        {loading ? 'Chargement…' : 'Actualiser'}
-                    </button>
                 </div>
 
                 {/* Barre d'outils unifiée (Recherche, filtres rapides, dropdowns Date, Méthode, Volume) */}
