@@ -57,6 +57,15 @@ class PageView(Base):
     browser = Column(String(50), nullable=True)
     os = Column(String(50), nullable=True)
     language = Column(String(20), nullable=True)
+    # Signaux ajoutés pour l'écran Analytics.
+    #
+    # viewport_width : largeur réelle de la fenêtre, en pixels. device_type est
+    # déduit du user-agent, qui ne dit rien de la taille utile — un portable en
+    # fenêtre étroite et un grand écran sont tous deux "desktop".
+    # timezone : fuseau IANA déclaré par le navigateur (ex. "Europe/Paris").
+    # Approximation géographique sans base GeoIP ni stockage d'adresse IP.
+    viewport_width = Column(Integer, nullable=True)
+    timezone = Column(String(64), nullable=True)
     timestamp = Column(DateTime, default=utc_now, index=True)
 
 class AnalyticsEvent(Base):

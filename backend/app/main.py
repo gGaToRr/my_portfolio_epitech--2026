@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings, ADMIN_PASSWORD_FROM_ENV
 from app.database import engine, Base
 from app.seed import seed_db
+from app.migrations import run_additive_migrations
 from app.routers import auth, projects, analytics, contact, status as status_router
 from app.logger import log_success, log_error
 from app.metrics import metrics_tracker
@@ -28,8 +29,11 @@ LOG_EXCLUDED_PATHS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Démarrage : Création des tables SQLite et peuplement initial
+    # Démarrage : création des tables, migrations additives, peuplement initial.
+    # L'ordre compte : create_all() ne modifie pas une table déjà présente, c'est
+    # run_additive_migrations() qui rattrape les colonnes ajoutées depuis.
     Base.metadata.create_all(bind=engine)
+    run_additive_migrations(engine)
     seed_db()
     log_success("main.py", "lifespan", f"FastAPI Portfolio Backend initialisé sur le port {settings.API_PORT}")
     print("🚀 FastAPI Portfolio Backend prêt !")

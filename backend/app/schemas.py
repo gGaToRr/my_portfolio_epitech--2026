@@ -88,6 +88,9 @@ class PageViewCollect(BaseModel):
     path: str
     referrer: Optional[str] = None
     language: Optional[str] = None
+    # Bornes larges mais présentes : ces valeurs viennent du client.
+    viewport_width: Optional[int] = Field(default=None, ge=0, le=20000)
+    timezone: Optional[str] = Field(default=None, max_length=64)
 
 class EventCollect(BaseModel):
     event_name: str
