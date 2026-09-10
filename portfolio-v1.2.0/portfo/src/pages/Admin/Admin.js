@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import Header from '../../components/Header/Header';
 import AdminUptime from '../../components/AdminUptime/AdminUptime';
 import AdminInfoCards from '../../components/AdminInfoCards/AdminInfoCards';
-import PixelPetCard from '../../components/PixelPetCard/PixelPetCard';
+import PixelPetGame from '../../features/PixelGame/PixelPetGame';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 import { loginAdmin, logoutAdmin, verifyAdminAuth } from '../../services/api';
 import './Admin.css';
@@ -248,7 +248,7 @@ export default function Admin({ theme, onToggleTheme }) {
                         />
                         <AdminInfoCards />
                         <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
-                            <PixelPetCard />
+                            <PixelPetGame />
                         </div>
                     </section>
                 )}
