@@ -4,6 +4,7 @@ import Header from '../../components/Header/Header';
 import AdminUptime from '../../components/AdminUptime/AdminUptime';
 import AdminInfoCards from '../../components/AdminInfoCards/AdminInfoCards';
 import AdminLogs from '../../components/AdminLogs/AdminLogs';
+import AdminAnalytics from '../../components/AdminAnalytics/AdminAnalytics';
 import PixelPetGame from '../../features/PixelGame/PixelPetGame';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 import { loginAdmin, logoutAdmin, verifyAdminAuth } from '../../services/api';
@@ -246,7 +247,9 @@ export default function Admin({ theme, onToggleTheme }) {
                 )}
                 {activeTab === 'analytics' && (
                     <section className="admin-page-view admin-page-analytics">
-                        {/* Page Analytics vide */}
+                        {/* Le thème est transmis : les graphiques sont rendus côté
+                            serveur et ne peuvent pas s'y adapter d'eux-mêmes. */}
+                        <AdminAnalytics theme={theme} />
                     </section>
                 )}
                 {activeTab === 'logs' && (

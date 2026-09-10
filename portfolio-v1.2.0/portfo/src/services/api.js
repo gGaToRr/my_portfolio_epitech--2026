@@ -133,6 +133,15 @@ export async function deleteEpitechProject(id) {
 }
 
 // ----------------- Analytics -----------------
+function resolveTimezone() {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+    } catch (_) {
+        // Intl absent ou restreint : le champ reste simplement vide.
+        return null;
+    }
+}
+
 export async function trackPageView(path, referrer) {
     try {
         await apiRequest('/api/analytics/collect', {
@@ -141,6 +150,12 @@ export async function trackPageView(path, referrer) {
                 path: path || window.location.pathname,
                 referrer: referrer !== undefined ? referrer : document.referrer || '',
                 language: navigator.language || 'fr',
+                // Largeur réelle de la fenêtre : le type d'appareil est deviné
+                // depuis le user-agent et ne dit rien de la place disponible.
+                viewport_width: window.innerWidth || null,
+                // Fuseau IANA (ex. "Europe/Paris") : approximation géographique
+                // sans base GeoIP ni conservation d'adresse IP.
+                timezone: resolveTimezone(),
             }),
         });
     } catch (_) {
@@ -166,6 +181,35 @@ export async function trackEvent(eventName, target, extraData = {}) {
 
 export async function fetchAnalyticsStats(days = 30) {
     return apiRequest(`/api/admin/analytics/stats?days=${days}`);
+}
+
+export async function fetchAnalyticsOverview(days = 30) {
+    return apiRequest(`/api/admin/analytics/overview?days=${days}`);
+}
+
+/**
+ * Récupère un graphique SVG rendu par le serveur et renvoie une URL d'objet.
+ *
+ * Un <img src="/api/..."> ne conviendrait pas : le navigateur n'y joint aucun
+ * en-tête, donc pas de jeton d'authentification. On télécharge donc l'image
+ * nous-mêmes avec le jeton, puis on l'expose via une URL blob.
+ *
+ * L'appelant doit libérer l'URL avec URL.revokeObjectURL() : sans cela chaque
+ * changement de période ou de thème laisse un blob en mémoire.
+ */
+export async function fetchAnalyticsChart(name, { days = 30, theme = 'light', signal } = {}) {
+    const token = localStorage.getItem('admin_token');
+    const query = new URLSearchParams({ days: String(days), theme });
+
+    const response = await fetch(`${API_BASE}/api/admin/analytics/chart/${name}?${query}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Graphique « ${name} » indisponible (HTTP ${response.status})`);
+    }
+    return URL.createObjectURL(await response.blob());
 }
 
 // ----------------- Auth Admin -----------------
