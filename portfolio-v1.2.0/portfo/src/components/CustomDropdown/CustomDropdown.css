@@ -47,9 +47,24 @@
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
 }
 
+.custom-dropdown-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.custom-dropdown-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
 .custom-dropdown-prefix {
     color: var(--text-muted);
-    margin-right: 4px;
+    margin-right: 2px;
     font-weight: 500;
 }
 
@@ -197,4 +212,25 @@
 .method-tag--options {
     background: rgba(167, 139, 250, 0.18);
     color: #a78bfa;
+}
+
+/* Tags pour les dates de logs */
+.date-tag--all {
+    background: rgba(96, 165, 250, 0.16);
+    color: #60a5fa;
+}
+
+.date-tag--active {
+    background: rgba(16, 185, 129, 0.16);
+    color: #10b981;
+}
+
+.date-tag--empty {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+}
+
+[data-theme="light"] .date-tag--empty {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--text-muted);
 }

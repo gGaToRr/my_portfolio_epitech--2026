@@ -10,6 +10,7 @@ export default function CustomDropdown({
     align = 'right',
     className = '',
     disabled = false,
+    icon = null,
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -50,13 +51,14 @@ export default function CustomDropdown({
         >
             <button
                 type="button"
-                className={`custom-dropdown-trigger ${value && value !== 'ALL' ? 'is-active' : ''}`}
+                className={`custom-dropdown-trigger ${value && value !== 'ALL' && value !== 'all' ? 'is-active' : ''}`}
                 onClick={() => !disabled && setIsOpen((prev) => !prev)}
                 disabled={disabled}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
             >
                 <span className="custom-dropdown-label">
+                    {icon && <span className="custom-dropdown-icon">{icon}</span>}
                     {prefix && <span className="custom-dropdown-prefix">{prefix}</span>}
                     {displayLabel}
                 </span>

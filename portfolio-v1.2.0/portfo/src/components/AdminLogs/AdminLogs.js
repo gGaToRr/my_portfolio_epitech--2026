@@ -252,9 +252,38 @@ export default function AdminLogs({ onBack }) {
         return dateStr || fallbackLabel || '';
     };
 
+    // Options enrichies pour le menu déroulant de sélection des jours
+    const dateOptions = useMemo(() => {
+        const list = [
+            {
+                value: 'all',
+                label: '5 derniers jours',
+                shortLabel: '5 jours',
+                tag: `${totalCachedLines} logs`,
+                tagClass: 'date-tag--all',
+                description: 'Flux combiné des 5 derniers jours',
+            },
+        ];
+
+        days.forEach((day) => {
+            const formattedDate = formatDayDate(day.date, day.label);
+            const count = day.exists ? (day.lines?.length || 0) : 0;
+            list.push({
+                value: day.filename,
+                label: day.label || `Logs du ${formattedDate}`,
+                shortLabel: formattedDate,
+                tag: `${count} logs`,
+                tagClass: count > 0 ? 'date-tag--active' : 'date-tag--empty',
+                description: `${day.filename} • ${day.total_lines || count} lignes`,
+            });
+        });
+
+        return list;
+    }, [days, totalCachedLines]);
+
     return (
         <div className="admin-logs-view">
-            {/* 1. Bandeau supérieur séparé (Titre, Jours en cache, Filtres & Recherche) */}
+            {/* 1. Bandeau supérieur séparé (Titre, Filtres, Menus déroulants & Recherche) */}
             <div className="admin-logs-toolbar-card">
                 {/* En-tête épuré avec bouton retour SVG */}
                 <div className="admin-logs-header">
@@ -281,49 +310,7 @@ export default function AdminLogs({ onBack }) {
                     </button>
                 </div>
 
-                {/* Sélecteur de date avec icône SVG calendrier au lieu du texte aujourd'hui/hier/etc */}
-                <div className="admin-logs-days-bar">
-                    <button
-                        type="button"
-                        className={`admin-logs-day-btn ${selectedDayKey === 'all' ? 'is-active' : ''}`}
-                        onClick={() => setSelectedDayKey('all')}
-                        title="Afficher tous les logs des 5 derniers jours"
-                    >
-                        <svg className="admin-logs-day-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                        <span>5 jours</span>
-                        <span className="admin-logs-day-count">{totalCachedLines}</span>
-                    </button>
-                    {days.map((day) => {
-                        const formattedDate = formatDayDate(day.date, day.label);
-                        return (
-                            <button
-                                key={day.filename}
-                                type="button"
-                                className={`admin-logs-day-btn ${selectedDayKey === day.filename ? 'is-active' : ''}`}
-                                onClick={() => setSelectedDayKey(day.filename)}
-                                title={`${day.label || day.filename} (${day.total_lines} lignes au total)`}
-                            >
-                                <svg className="admin-logs-day-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                                </svg>
-                                <span>{formattedDate}</span>
-                                <span className="admin-logs-day-count">
-                                    {day.exists ? (day.lines?.length || 0) : '0'}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Barre d'outils (Recherche, filtres rapides, dropdowns customisés) */}
+                {/* Barre d'outils unifiée (Recherche, filtres rapides, dropdowns Date, Méthode, Volume) */}
                 <div className="admin-logs-toolbar">
                     <div className="admin-logs-search-box">
                         <input
@@ -365,7 +352,24 @@ export default function AdminLogs({ onBack }) {
                             Succès 200
                         </button>
 
-                        {/* Dropdown customisé pour la sélection de la méthode HTTP (Réutilisable & Au premier plan) */}
+                        {/* Dropdown customisé pour la sélection de la période / date avec icône calendrier */}
+                        <CustomDropdown
+                            value={selectedDayKey}
+                            options={dateOptions}
+                            onChange={(val) => setSelectedDayKey(val)}
+                            prefix="Date : "
+                            icon={
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            }
+                            align="right"
+                        />
+
+                        {/* Dropdown customisé pour la sélection de la méthode HTTP */}
                         <CustomDropdown
                             value={selectedMethod}
                             options={HTTP_METHOD_OPTIONS}
