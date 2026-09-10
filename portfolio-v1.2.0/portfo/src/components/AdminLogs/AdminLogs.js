@@ -31,6 +31,13 @@ export default function AdminLogs({ onBack }) {
 
     const consoleEndRef = useRef(null);
 
+    // Enregistrement de la consultation de la page de logs pour la session
+    useEffect(() => {
+        try {
+            sessionStorage.setItem('admin_logs_viewed_session', 'true');
+        } catch (_) {}
+    }, []);
+
     // Cache mémoire pour stocker les logs par fichier/jour
     const logsCacheRef = useRef({});
 

@@ -80,7 +80,17 @@ export default function AdminInfoCards({ customCards, onSelectTab }) {
                 }
 
                 const totalCalculated = Math.max(suspiciousCalls, recordedBugs);
-                setAnomaliesCount(totalCalculated);
+                
+                // Si les logs ont été consultés dans la session en cours, les anomalies restent à 0
+                const hasViewedLogs = (() => {
+                    try {
+                        return sessionStorage.getItem('admin_logs_viewed_session') === 'true';
+                    } catch (_) {
+                        return false;
+                    }
+                })();
+
+                setAnomaliesCount(hasViewedLogs ? 0 : totalCalculated);
                 setAdminCallsCount(adminCalls);
             } catch (err) {
                 console.warn('[AdminInfoCards] Erreur de chargement des métriques :', err.message);
@@ -239,6 +249,10 @@ export default function AdminInfoCards({ customCards, onSelectTab }) {
                         className={`admin-info-card ${variantClass} ${isLogsCard ? 'admin-info-card--clickable' : ''}`}
                         onClick={() => {
                             if (isLogsCard && onSelectTab) {
+                                try {
+                                    sessionStorage.setItem('admin_logs_viewed_session', 'true');
+                                } catch (_) {}
+                                setAnomaliesCount(0);
                                 onSelectTab('logs');
                             }
                         }}
@@ -248,6 +262,10 @@ export default function AdminInfoCards({ customCards, onSelectTab }) {
                         onKeyDown={(e) => {
                             if ((e.key === 'Enter' || e.key === ' ') && isLogsCard && onSelectTab) {
                                 e.preventDefault();
+                                try {
+                                    sessionStorage.setItem('admin_logs_viewed_session', 'true');
+                                } catch (_) {}
+                                setAnomaliesCount(0);
                                 onSelectTab('logs');
                             }
                         }}

@@ -173,6 +173,9 @@ export async function verifyAdminAuth() {
 export function logoutAdmin() {
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    try {
+        sessionStorage.removeItem('admin_logs_viewed_session');
+    } catch (_) {}
 }
 
 // ----------------- System Status & Uptime -----------------

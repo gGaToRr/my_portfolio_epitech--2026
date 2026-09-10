@@ -58,6 +58,9 @@ export default function Admin({ theme, onToggleTheme }) {
     };
 
     const handleLogout = () => {
+        try {
+            sessionStorage.removeItem('admin_logs_viewed_session');
+        } catch (_) {}
         logoutAdmin();
         setIsAuthenticated(false);
     };
@@ -151,6 +154,11 @@ export default function Admin({ theme, onToggleTheme }) {
                 customLinks={adminNavLinks}
                 activeId={activeTab}
                 onItemClick={(id) => {
+                    if (id === 'logs') {
+                        try {
+                            sessionStorage.setItem('admin_logs_viewed_session', 'true');
+                        } catch (_) {}
+                    }
                     if (id === 'game') {
                         window.location.href = '/panelAdmin/game';
                     } else {
