@@ -6,13 +6,29 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Force isolated test configuration
+# Configuration de test isolée.
+#
+# Toutes les variables sensibles sont fixées ici, y compris celles dont la
+# valeur par défaut conviendrait : les variables d'environnement priment sur
+# les fichiers .env.local, donc c'est le seul moyen d'empêcher la configuration
+# locale d'une machine de développement d'influer sur les résultats.
+# Sans cela, un backend/.env.local contenant TRUSTED_PROXY_HOPS=2 faisait
+# échouer les tests d'IP client, et de vrais identifiants SMTP auraient conduit
+# les tests de contact à envoyer réellement des e-mails.
 _test_tmp_dir = tempfile.mkdtemp()
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["ADMIN_USERNAME"] = "testadmin"
 os.environ["ADMIN_PASSWORD"] = "testpassword123"
 os.environ["SECRET_KEY"] = "test-secret-key-for-unit-tests-123456789"
 os.environ["LOG_FILE"] = os.path.join(_test_tmp_dir, "test_portfolio.log")
+os.environ["TRUSTED_PROXY_HOPS"] = "0"
+os.environ["DEBUG"] = "False"
+os.environ["ENABLE_DOCS"] = "False"
+os.environ["CORS_ORIGINS"] = "http://localhost:3006"
+# SMTP neutralisé : aucun test ne doit pouvoir ouvrir une connexion sortante.
+os.environ["SMTP_HOST"] = ""
+os.environ["SMTP_USER"] = ""
+os.environ["SMTP_PASS"] = ""
 
 from app.database import Base, get_db
 from app.main import app
