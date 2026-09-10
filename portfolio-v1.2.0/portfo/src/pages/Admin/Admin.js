@@ -218,18 +218,19 @@ export default function Admin({ theme, onToggleTheme }) {
             />
 
             <main className="App-Main admin-main-canvas">
-                {activeTab === 'main' && (
-                    <section className="admin-page-view admin-page-main">
-                        <AdminUptime
-                            isExpanded={isUptimeExpanded}
-                            onToggleExpand={() => setIsUptimeExpanded((prev) => !prev)}
-                        />
-                        <AdminInfoCards onSelectTab={(tabId) => setActiveTab(tabId)} />
-                        <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
-                            <PixelPetGame />
-                        </div>
-                    </section>
-                )}
+                <section
+                    className="admin-page-view admin-page-main"
+                    style={{ display: activeTab === 'main' ? 'flex' : 'none' }}
+                >
+                    <AdminUptime
+                        isExpanded={isUptimeExpanded}
+                        onToggleExpand={() => setIsUptimeExpanded((prev) => !prev)}
+                    />
+                    <AdminInfoCards onSelectTab={(tabId) => setActiveTab(tabId)} />
+                    <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
+                        <PixelPetGame />
+                    </div>
+                </section>
                 {activeTab === 'contents' && (
                     <section className="admin-page-view admin-page-contents">
                         {/* Page Contents vide */}

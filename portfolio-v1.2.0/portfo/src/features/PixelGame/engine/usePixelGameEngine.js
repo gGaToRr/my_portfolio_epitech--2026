@@ -24,11 +24,6 @@ import {
     CACTUS_SPRITE,
 } from '../sprites';
 import {
-    play8BitRetroSound,
-    playNukeSirenSound,
-    playNukeExplosionSound,
-} from '../audio/retroAudio';
-import {
     PIXEL_SCALE,
     GROUND_PADDING,
     INITIAL_CLOUDS,
@@ -151,7 +146,6 @@ export function usePixelGameEngine() {
         s.nukeEmbers = [];
 
         setIsNukeRunning(true);
-        playNukeSirenSound();
 
         const nameLabel = launcher === 'cowboy' ? 'du Cowboy' : launcher === 'spidey' ? 'de Spider-Man' : 'de Kermit';
         setStatusText(`ALERTE : NUKE TACTIQUE ${nameLabel.toUpperCase()} !`);
@@ -192,8 +186,6 @@ export function usePixelGameEngine() {
         setIsFighting(true);
         setBattleCountdown(AUTO_BATTLE_INTERVAL);
         setStatusText('Mêlée générale : Combat sur place !');
-
-        play8BitRetroSound(220, 660, 0.22);
 
         s.speechText = 'Combat général ! Kermit dégaine son concombre !';
         s.speechTimer = 75;
@@ -264,33 +256,25 @@ export function usePixelGameEngine() {
             }
         }
 
-        const render = () => {
+        // --------------------------------------------------------------------
+        // ALGORITHME DE SIMULATION DU JEU (Exécuté même en arrière-plan)
+        // --------------------------------------------------------------------
+        const tickSimulation = (w, h) => {
             const s = stateRef.current;
-            const w = canvas.width;
-            const h = canvas.height;
-
-            ctx.clearRect(0, 0, w, h);
-
             const groundY = h - GROUND_PADDING;
             const pixelScale = PIXEL_SCALE;
 
             s.walkTick++;
 
-            // ----------------------------------------------------------------
-            // 0. LOGIQUE DE LA NUKE TACTIQUE
-            // ----------------------------------------------------------------
+            // 0. Logique de la NUKE Tactique
             if (s.nukeActive) {
                 s.nukeTimer--;
 
                 if (s.nukePhase === 1) {
-                    if (s.nukeTimer % 20 === 0) {
-                        playNukeSirenSound();
-                    }
                     if (s.nukeTimer <= 0) {
                         s.nukePhase = 2;
                         s.nukeTimer = 220;
                         s.nukeFlashAlpha = 1.0;
-                        playNukeExplosionSound();
 
                         if (s.nukeLauncher === 'cowboy') {
                             setSpideyScore(0);
@@ -374,206 +358,47 @@ export function usePixelGameEngine() {
                 }
             }
 
-            ctx.save();
-            if (s.nukeActive && s.nukePhase === 2) {
-                ctx.translate(s.nukeShakeX, s.nukeShakeY);
-            }
-
-            // ----------------------------------------------------------------
-            // 1. DÉCOR D'ARRIÈRE-PLAN
-            // ----------------------------------------------------------------
-            ctx.fillStyle = 'rgba(51, 65, 85, 0.14)';
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            for (let x = 0; x <= w; x += 30) {
-                const hillY = groundY - 55 + Math.sin(x * 0.01) * 20 + Math.cos(x * 0.02) * 10;
-                ctx.lineTo(x, hillY);
-            }
-            ctx.lineTo(w, groundY);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = 'rgba(71, 85, 105, 0.12)';
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            for (let x = 0; x <= w; x += 25) {
-                const hillY = groundY - 30 + Math.sin((x + 100) * 0.016) * 14 + Math.cos(x * 0.03) * 6;
-                ctx.lineTo(x, hillY);
-            }
-            ctx.lineTo(w, groundY);
-            ctx.closePath();
-            ctx.fill();
-
+            // Défilement des nuages
             for (let i = 0; i < s.clouds.length; i++) {
                 const c = s.clouds[i];
                 c.x += c.speed;
                 if (c.x > w + 80) c.x = -90;
-                ctx.fillStyle = 'rgba(226, 232, 240, 0.18)';
-                ctx.fillRect(Math.round(c.x), c.y, c.w, c.h);
-                ctx.fillRect(Math.round(c.x) + 8, c.y - 5, c.w - 16, c.h + 5);
             }
 
-            const cactusSpots = [w * 0.15, w * 0.50, w * 0.85];
-            for (const cx of cactusSpots) {
-                const cactusY = Math.round(groundY - 12 * 3.4);
-                for (let r = 0; r < CACTUS_SPRITE.length; r++) {
-                    const line = CACTUS_SPRITE[r];
-                    for (let c = 0; c < line.length; c++) {
-                        const ch = line[c];
-                        if (ch !== '.' && CACTUS_PALETTE[ch]) {
-                            ctx.fillStyle = CACTUS_PALETTE[ch];
-                            ctx.fillRect(Math.round(cx) + c * 3.4, cactusY + r * 3.4, 3.4, 3.4);
-                        }
-                    }
+            // Physique des ondes et particules NUKE
+            for (let i = s.nukeShockwaves.length - 1; i >= 0; i--) {
+                const sw = s.nukeShockwaves[i];
+                sw.radius += sw.speed;
+                sw.alpha *= 0.965;
+                if (sw.alpha < 0.02 || sw.radius > sw.maxRadius) {
+                    s.nukeShockwaves.splice(i, 1);
                 }
             }
 
-            // ----------------------------------------------------------------
-            // EFFETS VISUELS DU CHAMPIGNON NUCLÉAIRE
-            // ----------------------------------------------------------------
-            if (s.nukeActive && (s.nukePhase === 2 || s.nukePhase === 3)) {
-                const cx = w / 2;
-                const progress = Math.min(1, (220 - s.nukeTimer) / 100);
-
-                const columnHeight = Math.min(140, progress * 150);
-                const columnWidth = 32 + Math.sin(s.walkTick * 0.2) * 4;
-
-                for (let py = groundY; py >= groundY - columnHeight; py -= 8) {
-                    const yNorm = (groundY - py) / (columnHeight || 1);
-                    const curW = columnWidth * (1 - yNorm * 0.3);
-                    const colFlicker = (s.walkTick + py) % 4;
-                    ctx.fillStyle = colFlicker === 0 ? '#fef08a' : colFlicker === 1 ? '#f97316' : colFlicker === 2 ? '#ef4444' : '#1e293b';
-                    ctx.fillRect(Math.round(cx - curW / 2 + (Math.random() - 0.5) * 4), py, Math.round(curW), 8);
-                }
-
-                const capY = groundY - columnHeight;
-                const capRadiusX = Math.min(85, progress * 95);
-                const capRadiusY = Math.min(48, progress * 54);
-
-                ctx.fillStyle = '#1e293b';
-                ctx.beginPath();
-                ctx.ellipse(cx, capY, capRadiusX, capRadiusY, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#ea580c';
-                ctx.beginPath();
-                ctx.ellipse(cx, capY + 4, capRadiusX * 0.82, capRadiusY * 0.78, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                const coreFlicker = s.walkTick % 3 === 0 ? '#fffbeb' : '#fde047';
-                ctx.fillStyle = coreFlicker;
-                ctx.beginPath();
-                ctx.ellipse(cx, capY + 8, capRadiusX * 0.55, capRadiusY * 0.52, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = 'rgba(71, 85, 105, 0.7)';
-                ctx.beginPath();
-                ctx.ellipse(cx, groundY - columnHeight * 0.45, columnWidth * 1.3, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                for (let i = s.nukeShockwaves.length - 1; i >= 0; i--) {
-                    const sw = s.nukeShockwaves[i];
-                    sw.radius += sw.speed;
-                    sw.alpha *= 0.965;
-                    ctx.save();
-                    ctx.strokeStyle = `rgba(254, 240, 138, ${sw.alpha})`;
-                    ctx.lineWidth = 3.5;
-                    ctx.beginPath();
-                    ctx.ellipse(cx, groundY, sw.radius, sw.radius * 0.18, 0, 0, Math.PI * 2);
-                    ctx.stroke();
-
-                    ctx.strokeStyle = `rgba(239, 68, 68, ${sw.alpha * 0.6})`;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.ellipse(cx, groundY, sw.radius * 0.82, sw.radius * 0.15, 0, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.restore();
-
-                    if (sw.alpha < 0.02 || sw.radius > sw.maxRadius) {
-                        s.nukeShockwaves.splice(i, 1);
-                    }
-                }
-
-                for (let i = s.nukeMushroomParticles.length - 1; i >= 0; i--) {
-                    const p = s.nukeMushroomParticles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.size += 0.12;
-                    p.life--;
-                    const alpha = Math.max(0, p.life / p.maxLife);
-                    ctx.fillStyle = p.color;
-                    ctx.globalAlpha = alpha * 0.85;
-                    ctx.fillRect(Math.round(p.x - p.size / 2), Math.round(p.y - p.size / 2), Math.round(p.size), Math.round(p.size));
-                    ctx.globalAlpha = 1.0;
-                    if (p.life <= 0) s.nukeMushroomParticles.splice(i, 1);
-                }
-
-                for (let i = s.nukeEmbers.length - 1; i >= 0; i--) {
-                    const e = s.nukeEmbers[i];
-                    e.x += e.vx + (Math.random() - 0.5) * 0.4;
-                    e.y += e.vy;
-                    e.life--;
-                    if (e.y >= groundY) {
-                        e.y = groundY;
-                        e.vx *= 0.5;
-                        e.vy = 0;
-                    }
-                    const alpha = Math.max(0, e.life / 180);
-                    ctx.fillStyle = e.color;
-                    ctx.globalAlpha = alpha;
-                    ctx.fillRect(Math.round(e.x), Math.round(e.y), Math.round(e.size), Math.round(e.size));
-                    ctx.globalAlpha = 1.0;
-                    if (e.life <= 0) s.nukeEmbers.splice(i, 1);
-                }
+            for (let i = s.nukeMushroomParticles.length - 1; i >= 0; i--) {
+                const p = s.nukeMushroomParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.size += 0.12;
+                p.life--;
+                if (p.life <= 0) s.nukeMushroomParticles.splice(i, 1);
             }
 
-            // ----------------------------------------------------------------
-            // 2. SOL
-            // ----------------------------------------------------------------
-            // Subterranean earth fill to the bottom of the canvas
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.fillRect(0, groundY, w, Math.max(0, h - groundY));
-
-            // Solid pixelated ground border
-            ctx.strokeStyle = '#ca8a04';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(0, groundY);
-            ctx.lineTo(w, groundY);
-            ctx.stroke();
-
-            // Ground highlights and details (grass tufts & stone textures)
-            for (let i = 0; i < w; i += 28) {
-                const seed = (i * 19) % 29;
-                if (seed < 8) {
-                    ctx.fillStyle = '#64748b';
-                    ctx.fillRect(i + 6, groundY + 4, 6, 3);
-                } else if (seed < 16) {
-                    ctx.fillStyle = '#22c55e';
-                    ctx.fillRect(i + 8, groundY - 4, 3, 4);
-                    ctx.fillRect(i + 11, groundY - 6, 3, 6);
-                } else if (seed < 22) {
-                    ctx.fillStyle = '#eab308';
-                    ctx.fillRect(i + 4, groundY + 1, 4, 2);
+            for (let i = s.nukeEmbers.length - 1; i >= 0; i--) {
+                const e = s.nukeEmbers[i];
+                e.x += e.vx + (Math.random() - 0.5) * 0.4;
+                e.y += e.vy;
+                e.life--;
+                if (e.y >= groundY) {
+                    e.y = groundY;
+                    e.vx *= 0.5;
+                    e.vy = 0;
                 }
+                if (e.life <= 0) s.nukeEmbers.splice(i, 1);
             }
 
-            // ----------------------------------------------------------------
-            // 3. MINE ET CAISSE D'ARMES
-            // ----------------------------------------------------------------
+            // Mine & Caisses d'armes
             if (s.mine.active) {
-                const mineY = Math.round(groundY - 7 * 3.8);
-                for (let r = 0; r < MINE_SPRITE.length; r++) {
-                    const line = MINE_SPRITE[r];
-                    for (let c = 0; c < line.length; c++) {
-                        const ch = line[c];
-                        if (ch !== '.' && MINE_PALETTE[ch]) {
-                            ctx.fillStyle = ch === 'R' ? (s.walkTick % 10 < 5 ? '#ef4444' : '#fbbf24') : MINE_PALETTE[ch];
-                            ctx.fillRect(Math.round(s.mine.x) + c * 3.8, mineY + r * 3.8, 3.8, 3.8);
-                        }
-                    }
-                }
-
                 if (!s.nukeActive) {
                     const chars = [
                         { name: 'cowboy', x: s.cowboyX + 35, powerupKey: 'cowboyPowerup', timerKey: 'cowboyPowerupTimer' },
@@ -589,7 +414,6 @@ export function usePixelGameEngine() {
                             s[ch.powerupKey] = powerup;
                             s[ch.timerKey] = 600;
 
-                            play8BitRetroSound(440, 880, 0.22);
                             for (let k = 0; k < 18; k++) {
                                 s.battleVFX.push({
                                     x: s.mine.x + 18,
@@ -627,13 +451,11 @@ export function usePixelGameEngine() {
                 s.mine.respawnTimer--;
                 if (s.mine.respawnTimer <= 0) {
                     s.mine.active = true;
-                    s.mine.x = Math.round(70 + Math.random() * (w - 140));
+                    s.mine.x = Math.round(70 + Math.random() * Math.max(100, w - 140));
                 }
             }
 
-            // ----------------------------------------------------------------
-            // 4. GESTION DES TIRS D'AK-47
-            // ----------------------------------------------------------------
+            // Gestion des tirs d'AK-47
             if (!s.nukeActive) {
                 const akUsers = [
                     { name: 'cowboy', x: s.cowboyX, y: Math.round(groundY - 22 * pixelScale), dir: s.cowboyDir || -1, timerKey: 'cowboyPowerupTimer', powerKey: 'cowboyPowerup' },
@@ -647,7 +469,6 @@ export function usePixelGameEngine() {
                         if (s[user.timerKey] <= 0) s[user.powerKey] = null;
 
                         if (s.walkTick % 16 === 0) {
-                            play8BitRetroSound(320, 160, 0.08);
                             const muzzleX = user.dir === 1 ? user.x + 85 : user.x - 10;
                             const muzzleY = user.y + 40;
 
@@ -696,6 +517,7 @@ export function usePixelGameEngine() {
                 }
             }
 
+            // Douilles de balles
             for (let i = s.casingParticles.length - 1; i >= 0; i--) {
                 const cp = s.casingParticles[i];
                 cp.x += cp.vx;
@@ -707,14 +529,10 @@ export function usePixelGameEngine() {
                     cp.vy = 0;
                 }
                 cp.life--;
-                ctx.fillStyle = '#eab308';
-                ctx.fillRect(Math.round(cp.x), Math.round(cp.y), 3, 2);
                 if (cp.life <= 0) s.casingParticles.splice(i, 1);
             }
 
-            // ----------------------------------------------------------------
-            // 5. BATTLE LOGIC SUR PLACE / NUKE
-            // ----------------------------------------------------------------
+            // Logique du combat sur place / Nuke
             if (s.nukeActive) {
                 s.snakeX = s.cowboyX + 85;
             } else if (s.fightActive) {
@@ -729,8 +547,6 @@ export function usePixelGameEngine() {
                     }
 
                     if (s.fightTimer % 22 === 0) {
-                        play8BitRetroSound(350, 720, 0.16);
-
                         s.cucumberProjectiles.push({
                             x: s.kermitX + (s.cowboyX > s.kermitX ? 65 : -15),
                             y: groundY - 45,
@@ -755,7 +571,6 @@ export function usePixelGameEngine() {
                     }
 
                     if (s.fightTimer % 26 === 0) {
-                        play8BitRetroSound(580, 280, 0.15);
                         s.webLines.push({
                             startX: s.spideyX + 45,
                             startY: groundY - 65,
@@ -776,7 +591,6 @@ export function usePixelGameEngine() {
                     }
 
                     if (s.fightTimer % 24 === 0) {
-                        play8BitRetroSound(260, 130, 0.18);
                         s.bulletTracers.push({
                             x: s.cowboyX + (s.spideyX > s.cowboyX ? 65 : -15),
                             y: groundY - 60,
@@ -820,21 +634,18 @@ export function usePixelGameEngine() {
                             s.speechText = 'YAAAAAY ! Victoire de Kermit ! Le concombre triomphe !';
                             s.speechSpeaker = 'kermit';
                             s.speechTimer = 90;
-                            play8BitRetroSound(500, 1000, 0.35);
                         } else if (s.chosenWinner === 'cowboy') {
                             setCowboyScore((c) => c + 1);
                             setStatusText('Victoire du Cowboy !');
                             s.speechText = 'Victoire du Cowboy ! Le Far West triomphe.';
                             s.speechSpeaker = 'cowboy';
                             s.speechTimer = 90;
-                            play8BitRetroSound(300, 700, 0.3);
                         } else {
                             setSpideyScore((sp) => sp + 1);
                             setStatusText('Victoire de Spider-Man !');
                             s.speechText = 'Victoire de Spider-Man ! Ville securisee.';
                             s.speechSpeaker = 'spidey';
                             s.speechTimer = 90;
-                            play8BitRetroSound(400, 900, 0.3);
                         }
                     }
                 }
@@ -846,7 +657,7 @@ export function usePixelGameEngine() {
                     setStatusText('Patrouille active : Cowboy, Spider-Man & Kermit');
                 }
             } else {
-                // Patrouille avec limites d'écran
+                // Déplacements patrouille
                 s.cowboyX += (s.cowboyDir || -1) * 1.3;
                 if (s.cowboyX < 25) {
                     s.cowboyX = 25;
@@ -889,7 +700,7 @@ export function usePixelGameEngine() {
                 s.snakeFrame = (s.snakeFrame + 1) % SNAKE_FRAMES.length;
             }
 
-            // Fumée cigarette Cowboy
+            // Particules de fumée cigarette
             const cigX = Math.round(s.cowboyX + 2 * pixelScale);
             const cigY = Math.round(groundY - 22 * pixelScale + 8 * pixelScale);
 
@@ -911,32 +722,17 @@ export function usePixelGameEngine() {
                 sp.y += sp.vy;
                 sp.size += 0.07;
                 sp.life--;
-                const alpha = Math.max(0, sp.life / sp.maxLife);
-                ctx.fillStyle = `rgba(203, 213, 225, ${alpha * 0.75})`;
-                ctx.fillRect(Math.round(sp.x), Math.round(sp.y), Math.round(sp.size), Math.round(sp.size));
                 if (sp.life <= 0) s.smokeParticles.splice(i, 1);
             }
 
-            // Projectiles Concombre (Kermit)
+            // Physique projectiles Concombre
             for (let i = s.cucumberProjectiles.length - 1; i >= 0; i--) {
                 const cp = s.cucumberProjectiles[i];
                 cp.x += cp.vx;
                 cp.y += cp.vy;
                 cp.life--;
 
-                ctx.fillStyle = '#14532d';
-                ctx.fillRect(Math.round(cp.x), Math.round(cp.y), 24, 12);
-                ctx.fillStyle = '#22c55e';
-                ctx.fillRect(Math.round(cp.x) + 2, Math.round(cp.y) + 2, 16, 8);
-                ctx.fillStyle = '#86efac';
-                ctx.fillRect(Math.round(cp.x) + 4, Math.round(cp.y) + 3, 10, 2);
-                ctx.fillStyle = '#f43f5e';
-                ctx.fillRect(Math.round(cp.x) + (cp.vx > 0 ? 18 : 0), Math.round(cp.y) + 1, 6, 10);
-                ctx.fillStyle = '#fda4af';
-                ctx.fillRect(Math.round(cp.x) + (cp.vx > 0 ? 21 : 1), Math.round(cp.y) + 3, 2, 6);
-
                 if (Math.abs(cp.x - cp.targetX) < 25 || cp.life <= 0) {
-                    play8BitRetroSound(350, 700, 0.12);
                     for (let k = 0; k < 8; k++) {
                         s.battleVFX.push({
                             x: cp.targetX + 30,
@@ -959,20 +755,13 @@ export function usePixelGameEngine() {
                 }
             }
 
-            // Balles du Cowboy
+            // Physique des balles de revolver
             for (let i = s.bulletTracers.length - 1; i >= 0; i--) {
                 const bt = s.bulletTracers[i];
                 bt.x += bt.vx;
                 bt.life--;
-                ctx.strokeStyle = '#fbbf24';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(bt.x, bt.y || groundY - 60);
-                ctx.lineTo(bt.x - bt.vx * 2, bt.y || groundY - 60);
-                ctx.stroke();
 
                 if (Math.abs(bt.x - bt.targetX) < 25 || bt.life <= 0) {
-                    play8BitRetroSound(420, 180, 0.1);
                     for (let k = 0; k < 8; k++) {
                         s.battleVFX.push({
                             x: bt.targetX + 30,
@@ -995,17 +784,9 @@ export function usePixelGameEngine() {
                 }
             }
 
-            // Toiles Spider-Man
+            // Physique des toiles
             for (let i = s.webLines.length - 1; i >= 0; i--) {
                 const wl = s.webLines[i];
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
-                ctx.setLineDash([4, 4]);
-                ctx.beginPath();
-                ctx.moveTo(wl.startX, wl.startY);
-                ctx.lineTo(wl.targetX, wl.targetY);
-                ctx.stroke();
-                ctx.setLineDash([]);
                 wl.life--;
                 if (wl.life === 1) {
                     s.battleTexts.push({
@@ -1035,32 +816,296 @@ export function usePixelGameEngine() {
                 const bt = s.battleTexts[i];
                 bt.y -= 0.6;
                 bt.life--;
-                ctx.fillStyle = bt.color;
-                ctx.font = 'bold 16px monospace';
-                ctx.fillText(bt.text, bt.x, bt.y);
                 if (bt.life <= 0) s.battleTexts.splice(i, 1);
+            }
+
+            // Particules VFX
+            for (let i = s.battleVFX.length - 1; i >= 0; i--) {
+                const p = s.battleVFX[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) s.battleVFX.splice(i, 1);
+            }
+
+            // Dialogue
+            if (s.speechTimer > 0) {
+                s.speechTimer--;
+                let speakerX = s.cowboyX + 45;
+                if (s.speechSpeaker === 'spidey') speakerX = s.spideyX + 45;
+                if (s.speechSpeaker === 'kermit') speakerX = s.kermitX + 45;
+
+                setBubble({
+                    text: s.speechText,
+                    visible: true,
+                    x: Math.min(w - 150, Math.max(150, speakerX)),
+                    y: Math.max(14, groundY - 22 * pixelScale - 26),
+                });
+            } else {
+                setBubble((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+            }
+        };
+
+        // --------------------------------------------------------------------
+        // MOTEUR DE RENDU GRAPHIQUE 2D CANVAS (Actif seulement au premier plan)
+        // --------------------------------------------------------------------
+        const drawGraphics = (canvasCtx, w, h) => {
+            const s = stateRef.current;
+            const groundY = h - GROUND_PADDING;
+            const pixelScale = PIXEL_SCALE;
+
+            canvasCtx.clearRect(0, 0, w, h);
+
+            canvasCtx.save();
+            if (s.nukeActive && s.nukePhase === 2) {
+                canvasCtx.translate(s.nukeShakeX, s.nukeShakeY);
+            }
+
+            // 1. DÉCOR D'ARRIÈRE-PLAN
+            canvasCtx.fillStyle = 'rgba(51, 65, 85, 0.14)';
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, groundY);
+            for (let x = 0; x <= w; x += 30) {
+                const hillY = groundY - 55 + Math.sin(x * 0.01) * 20 + Math.cos(x * 0.02) * 10;
+                canvasCtx.lineTo(x, hillY);
+            }
+            canvasCtx.lineTo(w, groundY);
+            canvasCtx.closePath();
+            canvasCtx.fill();
+
+            canvasCtx.fillStyle = 'rgba(71, 85, 105, 0.12)';
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, groundY);
+            for (let x = 0; x <= w; x += 25) {
+                const hillY = groundY - 30 + Math.sin((x + 100) * 0.016) * 14 + Math.cos(x * 0.03) * 6;
+                canvasCtx.lineTo(x, hillY);
+            }
+            canvasCtx.lineTo(w, groundY);
+            canvasCtx.closePath();
+            canvasCtx.fill();
+
+            for (let i = 0; i < s.clouds.length; i++) {
+                const c = s.clouds[i];
+                canvasCtx.fillStyle = 'rgba(226, 232, 240, 0.18)';
+                canvasCtx.fillRect(Math.round(c.x), c.y, c.w, c.h);
+                canvasCtx.fillRect(Math.round(c.x) + 8, c.y - 5, c.w - 16, c.h + 5);
+            }
+
+            const cactusSpots = [w * 0.15, w * 0.50, w * 0.85];
+            for (const cx of cactusSpots) {
+                const cactusY = Math.round(groundY - 12 * 3.4);
+                for (let r = 0; r < CACTUS_SPRITE.length; r++) {
+                    const line = CACTUS_SPRITE[r];
+                    for (let c = 0; c < line.length; c++) {
+                        const ch = line[c];
+                        if (ch !== '.' && CACTUS_PALETTE[ch]) {
+                            canvasCtx.fillStyle = CACTUS_PALETTE[ch];
+                            canvasCtx.fillRect(Math.round(cx) + c * 3.4, cactusY + r * 3.4, 3.4, 3.4);
+                        }
+                    }
+                }
+            }
+
+            // EFFETS DU CHAMPIGNON NUCLÉAIRE
+            if (s.nukeActive && (s.nukePhase === 2 || s.nukePhase === 3)) {
+                const cx = w / 2;
+                const progress = Math.min(1, (220 - s.nukeTimer) / 100);
+
+                const columnHeight = Math.min(140, progress * 150);
+                const columnWidth = 32 + Math.sin(s.walkTick * 0.2) * 4;
+
+                for (let py = groundY; py >= groundY - columnHeight; py -= 8) {
+                    const yNorm = (groundY - py) / (columnHeight || 1);
+                    const curW = columnWidth * (1 - yNorm * 0.3);
+                    const colFlicker = (s.walkTick + py) % 4;
+                    canvasCtx.fillStyle = colFlicker === 0 ? '#fef08a' : colFlicker === 1 ? '#f97316' : colFlicker === 2 ? '#ef4444' : '#1e293b';
+                    canvasCtx.fillRect(Math.round(cx - curW / 2 + (Math.random() - 0.5) * 4), py, Math.round(curW), 8);
+                }
+
+                const capY = groundY - columnHeight;
+                const capRadiusX = Math.min(85, progress * 95);
+                const capRadiusY = Math.min(48, progress * 54);
+
+                canvasCtx.fillStyle = '#1e293b';
+                canvasCtx.beginPath();
+                canvasCtx.ellipse(cx, capY, capRadiusX, capRadiusY, 0, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                canvasCtx.fillStyle = '#ea580c';
+                canvasCtx.beginPath();
+                canvasCtx.ellipse(cx, capY + 4, capRadiusX * 0.82, capRadiusY * 0.78, 0, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                const coreFlicker = s.walkTick % 3 === 0 ? '#fffbeb' : '#fde047';
+                canvasCtx.fillStyle = coreFlicker;
+                canvasCtx.beginPath();
+                canvasCtx.ellipse(cx, capY + 8, capRadiusX * 0.55, capRadiusY * 0.52, 0, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                canvasCtx.fillStyle = 'rgba(71, 85, 105, 0.7)';
+                canvasCtx.beginPath();
+                canvasCtx.ellipse(cx, groundY - columnHeight * 0.45, columnWidth * 1.3, 10, 0, 0, Math.PI * 2);
+                canvasCtx.fill();
+
+                for (let i = s.nukeShockwaves.length - 1; i >= 0; i--) {
+                    const sw = s.nukeShockwaves[i];
+                    canvasCtx.save();
+                    canvasCtx.strokeStyle = `rgba(254, 240, 138, ${sw.alpha})`;
+                    canvasCtx.lineWidth = 3.5;
+                    canvasCtx.beginPath();
+                    canvasCtx.ellipse(cx, groundY, sw.radius, sw.radius * 0.18, 0, 0, Math.PI * 2);
+                    canvasCtx.stroke();
+
+                    canvasCtx.strokeStyle = `rgba(239, 68, 68, ${sw.alpha * 0.6})`;
+                    canvasCtx.lineWidth = 2;
+                    canvasCtx.beginPath();
+                    canvasCtx.ellipse(cx, groundY, sw.radius * 0.82, sw.radius * 0.15, 0, 0, Math.PI * 2);
+                    canvasCtx.stroke();
+                    canvasCtx.restore();
+                }
+
+                for (let i = s.nukeMushroomParticles.length - 1; i >= 0; i--) {
+                    const p = s.nukeMushroomParticles[i];
+                    const alpha = Math.max(0, p.life / p.maxLife);
+                    canvasCtx.fillStyle = p.color;
+                    canvasCtx.globalAlpha = alpha * 0.85;
+                    canvasCtx.fillRect(Math.round(p.x - p.size / 2), Math.round(p.y - p.size / 2), Math.round(p.size), Math.round(p.size));
+                    canvasCtx.globalAlpha = 1.0;
+                }
+
+                for (let i = s.nukeEmbers.length - 1; i >= 0; i--) {
+                    const e = s.nukeEmbers[i];
+                    const alpha = Math.max(0, e.life / 180);
+                    canvasCtx.fillStyle = e.color;
+                    canvasCtx.globalAlpha = alpha;
+                    canvasCtx.fillRect(Math.round(e.x), Math.round(e.y), Math.round(e.size), Math.round(e.size));
+                    canvasCtx.globalAlpha = 1.0;
+                }
+            }
+
+            // 2. SOL
+            canvasCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            canvasCtx.fillRect(0, groundY, w, Math.max(0, h - groundY));
+
+            canvasCtx.strokeStyle = '#ca8a04';
+            canvasCtx.lineWidth = 3;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, groundY);
+            canvasCtx.lineTo(w, groundY);
+            canvasCtx.stroke();
+
+            for (let i = 0; i < w; i += 28) {
+                const seed = (i * 19) % 29;
+                if (seed < 8) {
+                    canvasCtx.fillStyle = '#64748b';
+                    canvasCtx.fillRect(i + 6, groundY + 4, 6, 3);
+                } else if (seed < 16) {
+                    canvasCtx.fillStyle = '#22c55e';
+                    canvasCtx.fillRect(i + 8, groundY - 4, 3, 4);
+                    canvasCtx.fillRect(i + 11, groundY - 6, 3, 6);
+                } else if (seed < 22) {
+                    canvasCtx.fillStyle = '#eab308';
+                    canvasCtx.fillRect(i + 4, groundY + 1, 4, 2);
+                }
+            }
+
+            // 3. MINE ET CAISSE
+            if (s.mine.active) {
+                const mineY = Math.round(groundY - 7 * 3.8);
+                for (let r = 0; r < MINE_SPRITE.length; r++) {
+                    const line = MINE_SPRITE[r];
+                    for (let c = 0; c < line.length; c++) {
+                        const ch = line[c];
+                        if (ch !== '.' && MINE_PALETTE[ch]) {
+                            canvasCtx.fillStyle = ch === 'R' ? (s.walkTick % 10 < 5 ? '#ef4444' : '#fbbf24') : MINE_PALETTE[ch];
+                            canvasCtx.fillRect(Math.round(s.mine.x) + c * 3.8, mineY + r * 3.8, 3.8, 3.8);
+                        }
+                    }
+                }
+            }
+
+            // Douilles
+            for (let i = s.casingParticles.length - 1; i >= 0; i--) {
+                const cp = s.casingParticles[i];
+                canvasCtx.fillStyle = '#eab308';
+                canvasCtx.fillRect(Math.round(cp.x), Math.round(cp.y), 3, 2);
+            }
+
+            // Fumée cigarette
+            for (let i = s.smokeParticles.length - 1; i >= 0; i--) {
+                const sp = s.smokeParticles[i];
+                const alpha = Math.max(0, sp.life / sp.maxLife);
+                canvasCtx.fillStyle = `rgba(203, 213, 225, ${alpha * 0.75})`;
+                canvasCtx.fillRect(Math.round(sp.x), Math.round(sp.y), Math.round(sp.size), Math.round(sp.size));
+            }
+
+            // Concombres
+            for (let i = s.cucumberProjectiles.length - 1; i >= 0; i--) {
+                const cp = s.cucumberProjectiles[i];
+                canvasCtx.fillStyle = '#14532d';
+                canvasCtx.fillRect(Math.round(cp.x), Math.round(cp.y), 24, 12);
+                canvasCtx.fillStyle = '#22c55e';
+                canvasCtx.fillRect(Math.round(cp.x) + 2, Math.round(cp.y) + 2, 16, 8);
+                canvasCtx.fillStyle = '#86efac';
+                canvasCtx.fillRect(Math.round(cp.x) + 4, Math.round(cp.y) + 3, 10, 2);
+                canvasCtx.fillStyle = '#f43f5e';
+                canvasCtx.fillRect(Math.round(cp.x) + (cp.vx > 0 ? 18 : 0), Math.round(cp.y) + 1, 6, 10);
+                canvasCtx.fillStyle = '#fda4af';
+                canvasCtx.fillRect(Math.round(cp.x) + (cp.vx > 0 ? 21 : 1), Math.round(cp.y) + 3, 2, 6);
+            }
+
+            // Balles Cowboy
+            for (let i = s.bulletTracers.length - 1; i >= 0; i--) {
+                const bt = s.bulletTracers[i];
+                canvasCtx.strokeStyle = '#fbbf24';
+                canvasCtx.lineWidth = 3;
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(bt.x, bt.y || groundY - 60);
+                canvasCtx.lineTo(bt.x - bt.vx * 2, bt.y || groundY - 60);
+                canvasCtx.stroke();
+            }
+
+            // Toiles Spider-Man
+            for (let i = s.webLines.length - 1; i >= 0; i--) {
+                const wl = s.webLines[i];
+                canvasCtx.strokeStyle = '#ffffff';
+                canvasCtx.lineWidth = 2.5;
+                canvasCtx.setLineDash([4, 4]);
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(wl.startX, wl.startY);
+                canvasCtx.lineTo(wl.targetX, wl.targetY);
+                canvasCtx.stroke();
+                canvasCtx.setLineDash([]);
+            }
+
+            // Textes flottants
+            for (let i = s.battleTexts.length - 1; i >= 0; i--) {
+                const bt = s.battleTexts[i];
+                canvasCtx.fillStyle = bt.color;
+                canvasCtx.font = 'bold 16px monospace';
+                canvasCtx.fillText(bt.text, bt.x, bt.y);
             }
 
             const drawShieldDome = (cx, cy, color) => {
                 const radius = 54;
-                ctx.save();
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 3;
-                ctx.setLineDash([8, 6]);
-                ctx.beginPath();
-                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillStyle = color.replace(')', ', 0.12)').replace('rgb', 'rgba').replace('#38bdf8', 'rgba(56, 189, 248, 0.12)');
-                ctx.fill();
+                canvasCtx.save();
+                canvasCtx.strokeStyle = color;
+                canvasCtx.lineWidth = 3;
+                canvasCtx.setLineDash([8, 6]);
+                canvasCtx.beginPath();
+                canvasCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+                canvasCtx.stroke();
+                canvasCtx.setLineDash([]);
+                canvasCtx.fillStyle = color.replace(')', ', 0.12)').replace('rgb', 'rgba').replace('#38bdf8', 'rgba(56, 189, 248, 0.12)');
+                canvasCtx.fill();
                 for (let a = 0; a < 3; a++) {
                     const angle = (s.walkTick * 0.06) + (a * (Math.PI * 2 / 3));
                     const nx = cx + Math.cos(angle) * radius;
                     const ny = cy + Math.sin(angle) * radius;
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(nx - 3, ny - 3, 6, 6);
+                    canvasCtx.fillStyle = '#ffffff';
+                    canvasCtx.fillRect(nx - 3, ny - 3, 6, 6);
                 }
-                ctx.restore();
+                canvasCtx.restore();
             };
 
             const drawAK47 = (x, y, dir) => {
@@ -1071,16 +1116,12 @@ export function usePixelGameEngine() {
                     for (let c = 0; c < line.length; c++) {
                         const ch = line[c];
                         if (ch !== '.' && AK47_PALETTE[ch]) {
-                            ctx.fillStyle = AK47_PALETTE[ch];
-                            ctx.fillRect(Math.round(x) + c * akScale, y + r * akScale, akScale, akScale);
+                            canvasCtx.fillStyle = AK47_PALETTE[ch];
+                            canvasCtx.fillRect(Math.round(x) + c * akScale, y + r * akScale, akScale, akScale);
                         }
                     }
                 }
             };
-
-            // ----------------------------------------------------------------
-            // 6. RENDU DES PERSONNAGES
-            // ----------------------------------------------------------------
 
             // Spider-Man
             const spideyY = Math.round(groundY - 19 * pixelScale);
@@ -1098,8 +1139,8 @@ export function usePixelGameEngine() {
                 for (let c = 0; c < line.length; c++) {
                     const ch = line[c];
                     if (ch !== '.' && SPIDEY_PALETTE[ch]) {
-                        ctx.fillStyle = SPIDEY_PALETTE[ch];
-                        ctx.fillRect(Math.round(s.spideyX) + c * pixelScale, spideyY + r * pixelScale, pixelScale, pixelScale);
+                        canvasCtx.fillStyle = SPIDEY_PALETTE[ch];
+                        canvasCtx.fillRect(Math.round(s.spideyX) + c * pixelScale, spideyY + r * pixelScale, pixelScale, pixelScale);
                     }
                 }
             }
@@ -1126,8 +1167,8 @@ export function usePixelGameEngine() {
                 for (let c = 0; c < line.length; c++) {
                     const ch = line[c];
                     if (ch !== '.' && KERMIT_PALETTE[ch]) {
-                        ctx.fillStyle = KERMIT_PALETTE[ch];
-                        ctx.fillRect(Math.round(s.kermitX) + c * pixelScale, kermitY + r * pixelScale, pixelScale, pixelScale);
+                        canvasCtx.fillStyle = KERMIT_PALETTE[ch];
+                        canvasCtx.fillRect(Math.round(s.kermitX) + c * pixelScale, kermitY + r * pixelScale, pixelScale, pixelScale);
                     }
                 }
             }
@@ -1154,8 +1195,8 @@ export function usePixelGameEngine() {
                 for (let c = 0; c < line.length; c++) {
                     const ch = line[c];
                     if (ch !== '.' && COWBOY_PALETTE[ch]) {
-                        ctx.fillStyle = ch === 'F' ? (s.walkTick % 6 < 3 ? '#ff2200' : '#f97316') : COWBOY_PALETTE[ch];
-                        ctx.fillRect(Math.round(s.cowboyX) + c * pixelScale, cowboyY + r * pixelScale, pixelScale, pixelScale);
+                        canvasCtx.fillStyle = ch === 'F' ? (s.walkTick % 6 < 3 ? '#ff2200' : '#f97316') : COWBOY_PALETTE[ch];
+                        canvasCtx.fillRect(Math.round(s.cowboyX) + c * pixelScale, cowboyY + r * pixelScale, pixelScale, pixelScale);
                     }
                 }
             }
@@ -1174,8 +1215,8 @@ export function usePixelGameEngine() {
                 for (let c = 0; c < line.length; c++) {
                     const ch = line[c];
                     if (ch !== '.' && SNAKE_PALETTE[ch]) {
-                        ctx.fillStyle = SNAKE_PALETTE[ch];
-                        ctx.fillRect(Math.round(s.snakeX) + c * pixelScale, snakeY + r * pixelScale, pixelScale, pixelScale);
+                        canvasCtx.fillStyle = SNAKE_PALETTE[ch];
+                        canvasCtx.fillRect(Math.round(s.snakeX) + c * pixelScale, snakeY + r * pixelScale, pixelScale, pixelScale);
                     }
                 }
             }
@@ -1183,50 +1224,73 @@ export function usePixelGameEngine() {
             // Particules VFX
             for (let i = s.battleVFX.length - 1; i >= 0; i--) {
                 const p = s.battleVFX[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life--;
-                ctx.fillStyle = p.color;
-                ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
-                if (p.life <= 0) s.battleVFX.splice(i, 1);
+                canvasCtx.fillStyle = p.color;
+                canvasCtx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
             }
 
             if (s.nukeFlashAlpha > 0) {
-                ctx.fillStyle = `rgba(255, 255, 255, ${s.nukeFlashAlpha})`;
-                ctx.fillRect(0, 0, w, h);
+                canvasCtx.fillStyle = `rgba(255, 255, 255, ${s.nukeFlashAlpha})`;
+                canvasCtx.fillRect(0, 0, w, h);
             }
 
             if (s.nukeActive && s.nukePhase === 1) {
                 const isRedTick = s.walkTick % 16 < 8;
-                ctx.fillStyle = isRedTick ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.08)';
-                ctx.fillRect(0, 0, w, h);
+                canvasCtx.fillStyle = isRedTick ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.08)';
+                canvasCtx.fillRect(0, 0, w, h);
 
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.92)';
-                ctx.fillRect(0, 0, w, 28);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 12px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('ALERTE : FRAPPE NUCLEAIRE TACTIQUE IMMINENTE', w / 2, 19);
-                ctx.textAlign = 'start';
+                canvasCtx.fillStyle = 'rgba(239, 68, 68, 0.92)';
+                canvasCtx.fillRect(0, 0, w, 28);
+                canvasCtx.fillStyle = '#ffffff';
+                canvasCtx.font = 'bold 12px monospace';
+                canvasCtx.textAlign = 'center';
+                canvasCtx.fillText('ALERTE : FRAPPE NUCLEAIRE TACTIQUE IMMINENTE', w / 2, 19);
+                canvasCtx.textAlign = 'start';
             }
 
-            ctx.restore();
+            canvasCtx.restore();
+        };
 
-            // Dialogue
-            if (s.speechTimer > 0) {
-                s.speechTimer--;
-                let speakerX = s.cowboyX + 45;
-                if (s.speechSpeaker === 'spidey') speakerX = s.spideyX + 45;
-                if (s.speechSpeaker === 'kermit') speakerX = s.kermitX + 45;
+        let isRunning = true;
+        let bgIntervalId = null;
 
-                setBubble({
-                    text: s.speechText,
-                    visible: true,
-                    x: Math.min(w - 150, Math.max(150, speakerX)),
-                    y: Math.max(14, groundY - 22 * pixelScale - 26),
-                });
+        const startBackgroundLoop = () => {
+            if (bgIntervalId) return;
+            bgIntervalId = setInterval(() => {
+                const w = canvas.width || 800;
+                const h = canvas.height || 220;
+                tickSimulation(w, h);
+            }, 33);
+        };
+
+        const stopBackgroundLoop = () => {
+            if (bgIntervalId) {
+                clearInterval(bgIntervalId);
+                bgIntervalId = null;
+            }
+        };
+
+        const onVisibilityChange = () => {
+            if (document.hidden) {
+                startBackgroundLoop();
             } else {
-                setBubble((prev) => (prev.visible ? { ...prev, visible: false } : prev));
+                stopBackgroundLoop();
+            }
+        };
+
+        document.addEventListener('visibilitychange', onVisibilityChange);
+
+        const render = () => {
+            if (!isRunning) return;
+
+            const w = canvas.width;
+            const h = canvas.height;
+
+            if (!document.hidden && w > 0 && h > 0) {
+                stopBackgroundLoop();
+                tickSimulation(w, h);
+                drawGraphics(ctx, w, h);
+            } else if (!bgIntervalId) {
+                startBackgroundLoop();
             }
 
             animationFrameId = requestAnimationFrame(render);
@@ -1235,6 +1299,9 @@ export function usePixelGameEngine() {
         render();
 
         return () => {
+            isRunning = false;
+            stopBackgroundLoop();
+            document.removeEventListener('visibilitychange', onVisibilityChange);
             if (resizeObserver) resizeObserver.disconnect();
             window.removeEventListener('resize', updateSize);
             cancelAnimationFrame(animationFrameId);
