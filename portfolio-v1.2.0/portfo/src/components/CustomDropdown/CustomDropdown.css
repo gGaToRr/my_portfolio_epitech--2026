@@ -1,0 +1,200 @@
+/* ==============================================================================
+   CUSTOM REUSABLE DROPDOWN
+   Menu flottant positionné par-dessus toutes les cartes avec backdrop blur
+   ============================================================================== */
+
+.custom-dropdown-container {
+    position: relative;
+    display: inline-block;
+    z-index: 50;
+}
+
+.custom-dropdown-container.is-open {
+    z-index: 99999;
+}
+
+.custom-dropdown-trigger {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: 9px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    user-select: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    outline: none;
+    white-space: nowrap;
+}
+
+.custom-dropdown-trigger:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+}
+
+.custom-dropdown-trigger.is-active,
+.custom-dropdown-container.is-open .custom-dropdown-trigger {
+    border-color: var(--accent, #10b981);
+    color: var(--text-strong);
+    background: var(--surface-strong);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.custom-dropdown-prefix {
+    color: var(--text-muted);
+    margin-right: 4px;
+    font-weight: 500;
+}
+
+.custom-dropdown-caret {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-left: 2px;
+}
+
+.custom-dropdown-caret.is-open {
+    transform: rotate(180deg);
+    color: var(--accent, #10b981);
+}
+
+/* Menu déroulant flottant au premier plan absolu */
+.custom-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    z-index: 999999;
+    min-width: 220px;
+    background: var(--surface-strong);
+    border: 1px solid var(--border-strong);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    animation: customDropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.custom-dropdown-menu.align-right {
+    right: 0;
+    left: auto;
+}
+
+.custom-dropdown-menu.align-left {
+    left: 0;
+    right: auto;
+}
+
+@keyframes customDropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.custom-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all 0.15s ease;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.custom-dropdown-item:hover {
+    background: var(--surface-hover);
+    color: var(--text-strong);
+}
+
+.custom-dropdown-item.is-selected {
+    background: rgba(16, 185, 129, 0.14);
+    color: var(--accent, #10b981);
+}
+
+.custom-dropdown-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.custom-dropdown-item-label {
+    font-weight: 600;
+    color: inherit;
+}
+
+.custom-dropdown-item-desc {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.custom-dropdown-tag {
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    min-width: 44px;
+    text-align: center;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    flex-shrink: 0;
+}
+
+/* Tags de méthode HTTP */
+.method-tag--all {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-strong);
+}
+
+[data-theme="light"] .method-tag--all {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1e293b;
+}
+
+.method-tag--get {
+    background: rgba(96, 165, 250, 0.18);
+    color: #60a5fa;
+}
+
+.method-tag--post {
+    background: rgba(52, 211, 153, 0.18);
+    color: #34d399;
+}
+
+.method-tag--put {
+    background: rgba(251, 191, 36, 0.18);
+    color: #fbbf24;
+}
+
+.method-tag--delete {
+    background: rgba(248, 113, 113, 0.18);
+    color: #f87171;
+}
+
+.method-tag--options {
+    background: rgba(167, 139, 250, 0.18);
+    color: #a78bfa;
+}

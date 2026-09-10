@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { fetchRecentDaysLogs, fetchLiveLogs } from '../../services/api';
+import CustomDropdown from '../CustomDropdown/CustomDropdown';
 import './AdminLogs.css';
+
+const HTTP_METHOD_OPTIONS = [
+    { value: 'ALL', label: 'Toutes les méthodes', shortLabel: 'Toutes', tag: 'ALL', tagClass: 'method-tag--all' },
+    { value: 'GET', label: 'Lecture & Consultations', shortLabel: 'GET', tag: 'GET', tagClass: 'method-tag--get' },
+    { value: 'POST', label: 'Créations & Actions', shortLabel: 'POST', tag: 'POST', tagClass: 'method-tag--post' },
+    { value: 'PUT', label: 'Mises à jour', shortLabel: 'PUT', tag: 'PUT', tagClass: 'method-tag--put' },
+    { value: 'DELETE', label: 'Suppressions', shortLabel: 'DELETE', tag: 'DELETE', tagClass: 'method-tag--delete' },
+    { value: 'OPTIONS', label: 'Pré-vols CORS', shortLabel: 'OPTIONS', tag: 'OPTIONS', tagClass: 'method-tag--options' },
+];
+
+const LINES_COUNT_OPTIONS = [
+    { value: 50, label: '50 lignes / jour' },
+    { value: 150, label: '150 lignes / jour' },
+    { value: 200, label: '200 lignes / jour' },
+    { value: 500, label: '500 lignes / jour' },
+];
 
 export default function AdminLogs({ onBack }) {
     // Liste des 5 jours (Aujourd'hui + 4 jours précédents)
@@ -10,22 +27,9 @@ export default function AdminLogs({ onBack }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterLevel, setFilterLevel] = useState('all'); // 'all', 'admin', 'errors', 'success'
     const [selectedMethod, setSelectedMethod] = useState('ALL'); // 'ALL', 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'
-    const [isMethodDropdownOpen, setIsMethodDropdownOpen] = useState(false);
     const [linesCount, setLinesCount] = useState(200);
 
     const consoleEndRef = useRef(null);
-    const methodDropdownRef = useRef(null);
-
-    // Fermeture du dropdown de méthode au clic à l'extérieur
-    useEffect(() => {
-        function handleClickOutside(e) {
-            if (methodDropdownRef.current && !methodDropdownRef.current.contains(e.target)) {
-                setIsMethodDropdownOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Cache mémoire pour stocker les logs par fichier/jour
     const logsCacheRef = useRef({});
@@ -274,7 +278,7 @@ export default function AdminLogs({ onBack }) {
                     ))}
                 </div>
 
-                {/* Barre d'outils (Recherche, filtres rapides, dropdown méthode HTTP custom, sélecteur de volume) */}
+                {/* Barre d'outils (Recherche, filtres rapides, dropdowns customisés) */}
                 <div className="admin-logs-toolbar">
                     <div className="admin-logs-search-box">
                         <input
@@ -316,99 +320,23 @@ export default function AdminLogs({ onBack }) {
                             Succès 200
                         </button>
 
-                        {/* Dropdown customisé pour la sélection de la méthode HTTP */}
-                        <div className="admin-logs-dropdown-wrapper" ref={methodDropdownRef}>
-                            <button
-                                type="button"
-                                className={`admin-logs-filter-btn admin-logs-dropdown-btn ${selectedMethod !== 'ALL' ? 'is-active' : ''}`}
-                                onClick={() => setIsMethodDropdownOpen((prev) => !prev)}
-                            >
-                                <span>Méthode : {selectedMethod === 'ALL' ? 'Toutes' : selectedMethod}</span>
-                                <span className={`admin-logs-dropdown-caret ${isMethodDropdownOpen ? 'is-open' : ''}`}>▾</span>
-                            </button>
-                            {isMethodDropdownOpen && (
-                                <div className="admin-logs-dropdown-menu">
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'ALL' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('ALL');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--all">ALL</span>
-                                        <span>Toutes les méthodes</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'GET' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('GET');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--get">GET</span>
-                                        <span>Lecture & Consultations</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'POST' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('POST');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--post">POST</span>
-                                        <span>Créations & Actions</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'PUT' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('PUT');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--put">PUT</span>
-                                        <span>Mises à jour</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'DELETE' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('DELETE');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--delete">DELETE</span>
-                                        <span>Suppressions</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`admin-logs-dropdown-item ${selectedMethod === 'OPTIONS' ? 'is-selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedMethod('OPTIONS');
-                                            setIsMethodDropdownOpen(false);
-                                        }}
-                                    >
-                                        <span className="method-tag method-tag--options">OPTIONS</span>
-                                        <span>Pré-vols CORS</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {/* Dropdown customisé pour la sélection de la méthode HTTP (Réutilisable & Au premier plan) */}
+                        <CustomDropdown
+                            value={selectedMethod}
+                            options={HTTP_METHOD_OPTIONS}
+                            onChange={(val) => setSelectedMethod(val)}
+                            prefix="Méthode : "
+                            align="right"
+                        />
 
-                        <select
-                            className="admin-logs-filter-btn"
+                        {/* Dropdown customisé pour le volume de lignes par jour */}
+                        <CustomDropdown
                             value={linesCount}
-                            onChange={(e) => setLinesCount(Number(e.target.value))}
-                            style={{ cursor: 'pointer', outline: 'none' }}
-                        >
-                            <option value={50}>50 lignes/jour</option>
-                            <option value={150}>150 lignes/jour</option>
-                            <option value={200}>200 lignes/jour</option>
-                            <option value={500}>500 lignes/jour</option>
-                        </select>
+                            options={LINES_COUNT_OPTIONS}
+                            onChange={(val) => setLinesCount(Number(val))}
+                            prefix=""
+                            align="right"
+                        />
                     </div>
                 </div>
             </div>
@@ -436,5 +364,6 @@ export default function AdminLogs({ onBack }) {
         </div>
     );
 }
+
 
 
