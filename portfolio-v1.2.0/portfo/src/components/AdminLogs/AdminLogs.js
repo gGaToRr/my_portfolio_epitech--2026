@@ -39,13 +39,32 @@ export default function AdminLogs({ onBack }) {
                 setDays(updatedDays);
             }
         } catch (err) {
-            console.warn('[AdminLogs] Erreur chargement logs multi-jours :', err.message);
+            console.warn('[AdminLogs] Erreur chargement logs multi-jours, fallback live :', err.message);
+            try {
+                const liveData = await fetchLiveLogs(linesCount);
+                if (liveData && Array.isArray(liveData.lines)) {
+                    const fallbackDay = {
+                        filename: liveData.filename || 'portfolio.log',
+                        label: "Aujourd'hui",
+                        date: new Date().toISOString().slice(0, 10),
+                        exists: true,
+                        lines: liveData.lines,
+                        total_lines: liveData.total_lines || liveData.lines.length,
+                        size_bytes: liveData.size_bytes || 0,
+                        cachedAt: Date.now(),
+                    };
+                    logsCacheRef.current[fallbackDay.filename] = fallbackDay;
+                    setDays([fallbackDay]);
+                }
+            } catch (fallbackErr) {
+                console.error('[AdminLogs] Erreur fallback logs :', fallbackErr);
+            }
         } finally {
             if (!isSilent) setLoading(false);
         }
     }, [linesCount]);
 
-    // Initialisation & actualisation en arrière-plan
+    // Initialisation & actualisation
     useEffect(() => {
         loadAllRecentLogs();
     }, [loadAllRecentLogs]);
@@ -139,6 +158,13 @@ export default function AdminLogs({ onBack }) {
             return true;
         });
     }, [activeLogs, searchTerm, filterLevel]);
+
+    // Auto-scroll vers le bas lors de l'arrivée de nouveaux logs
+    useEffect(() => {
+        if (consoleEndRef.current && filteredLogs.length > 0) {
+            consoleEndRef.current.scrollIntoView({ behavior: 'auto' });
+        }
+    }, [filteredLogs.length]);
 
     const getLineClass = (line) => {
         const lower = line.toLowerCase();
