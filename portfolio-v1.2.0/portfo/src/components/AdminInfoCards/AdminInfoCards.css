@@ -100,74 +100,41 @@
     letter-spacing: -0.01em;
 }
 
-/* Rangées d'informations / métriques */
-.admin-info-card__anomalies-list,
-.admin-info-card__mini-list {
+/* Rangées d'informations / métriques (sans points, style épuré de la carte du haut) */
+.admin-info-card__rows {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 0;
     width: 100%;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
-.admin-info-card__anomaly-item,
-.admin-info-card__mini-row {
+.admin-info-card__row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
     font-size: 0.78rem;
     font-family: inherit;
     color: var(--text);
-    overflow: hidden;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
-.admin-info-card__anomaly-item:hover,
-.admin-info-card__mini-row:hover {
-    background: var(--surface-hover);
-    border-color: var(--border-strong);
+.admin-info-card__row:last-child {
+    border-bottom: none;
+    padding-bottom: 2px;
 }
 
-.admin-info-card__anomaly-left,
-.admin-info-card__mini-left {
+.admin-info-card__row-left {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
-.admin-info-card__anomaly-dot,
-.admin-info-card__mini-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--accent, #10b981);
-    flex-shrink: 0;
-}
-
-.admin-info-card__anomaly-dot--green,
-.admin-info-card__mini-dot--green {
-    background: #10b981;
-}
-
-.admin-info-card__anomaly-dot--yellow,
-.admin-info-card__mini-dot--yellow,
-.admin-info-card--warning .admin-info-card__anomaly-dot {
-    background: #f59e0b;
-}
-
-.admin-info-card__anomaly-dot--red,
-.admin-info-card__mini-dot--red,
-.admin-info-card--danger .admin-info-card__anomaly-dot {
-    background: #ef4444;
-}
-
-.admin-info-card__anomaly-time {
+.admin-info-card__row-time {
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--text-muted);
@@ -177,16 +144,14 @@
     border-radius: 4px;
 }
 
-.admin-info-card__anomaly-source,
-.admin-info-card__mini-label {
+.admin-info-card__row-source {
     font-size: 0.76rem;
     font-weight: 600;
     color: var(--text-strong);
     letter-spacing: -0.01em;
 }
 
-.admin-info-card__anomaly-msg,
-.admin-info-card__mini-val {
+.admin-info-card__row-msg {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

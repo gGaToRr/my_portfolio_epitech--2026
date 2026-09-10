@@ -262,17 +262,16 @@ export default function AdminInfoCards({ customCards }) {
                             <div className="admin-info-card__value">{card.value}</div>
                             
                             {card.items && card.items.length > 0 && (
-                                <div className="admin-info-card__anomalies-list">
+                                <div className="admin-info-card__rows">
                                     {card.items.map((item, idx) => (
-                                        <div key={idx} className="admin-info-card__anomaly-item" title={item.raw || `${item.source}: ${item.message}`}>
-                                            <div className="admin-info-card__anomaly-left">
-                                                <span className="admin-info-card__anomaly-dot" />
+                                        <div key={idx} className="admin-info-card__row" title={item.raw || `${item.source}: ${item.message}`}>
+                                            <div className="admin-info-card__row-left">
                                                 {item.time && (
-                                                    <span className="admin-info-card__anomaly-time">{item.time}</span>
+                                                    <span className="admin-info-card__row-time">{item.time}</span>
                                                 )}
-                                                <span className="admin-info-card__anomaly-source">{item.source}</span>
+                                                <span className="admin-info-card__row-source">{item.source}</span>
                                             </div>
-                                            <span className="admin-info-card__anomaly-msg">{item.message}</span>
+                                            <span className="admin-info-card__row-msg">{item.message}</span>
                                         </div>
                                     ))}
                                 </div>
