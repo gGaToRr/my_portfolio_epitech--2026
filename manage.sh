@@ -72,7 +72,7 @@ service_start() {
     else
         echo -e "${CYAN}▶ Démarrage du Frontend React (Port 3006)...${NC}"
         cd "$ROOT_DIR/portfolio-v1.2.0/portfo"
-        PORT=3006 BROWSER=none setsid node ./node_modules/react-scripts/bin/react-scripts.js start > "$PID_DIR/frontend.log" 2>&1 &
+        PORT=3006 BROWSER=none setsid npm start > "$PID_DIR/frontend.log" 2>&1 &
         FRONTEND_PID=$!
         echo $FRONTEND_PID > "$PID_DIR/frontend.pid"
         echo -e "${GREEN}✓ Frontend React démarré (PID $FRONTEND_PID)${NC}"
