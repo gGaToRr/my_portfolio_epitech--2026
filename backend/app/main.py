@@ -3,12 +3,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
+from app.config import settings, ADMIN_PASSWORD_FROM_ENV
 from app.database import engine, Base
 from app.seed import seed_db
 from app.routers import auth, projects, analytics, contact, status as status_router
 from app.logger import log_success, log_error
 from app.metrics import metrics_tracker
+from app.credentials import format_credentials_banner
+from app.config import ADMIN_PASSWORD_WAS_GENERATED
 from app.security import get_client_ip
 
 # Routes interrogées en boucle par le panel admin (sondage toutes les 5 à 12 s).
@@ -29,9 +31,25 @@ async def lifespan(app: FastAPI):
     # Démarrage : Création des tables SQLite et peuplement initial
     Base.metadata.create_all(bind=engine)
     seed_db()
-    log_success("main.py", "lifespan", f"FastAPI Portfolio Backend initialisé sur le port {settings.API_PORT} (Doc: /docs)")
+    log_success("main.py", "lifespan", f"FastAPI Portfolio Backend initialisé sur le port {settings.API_PORT}")
     print("🚀 FastAPI Portfolio Backend prêt !")
-    print(f"   Documentation Swagger UI : http://localhost:{settings.API_PORT}/docs")
+    if _docs_enabled:
+        print(f"   Documentation Swagger UI : http://localhost:{settings.API_PORT}/docs")
+
+    # Identifiants administrateur sur la sortie standard, donc lisibles avec
+    # `docker compose logs backend`.
+    #
+    # Volontairement via print() et non via le logger : les fichiers .log sont
+    # servis par /api/admin/logs/live et repris dans les archives mensuelles.
+    # Un mot de passe n'a rien à y faire.
+    if not ADMIN_PASSWORD_FROM_ENV:
+        print()
+        print(format_credentials_banner(
+            settings.ADMIN_USERNAME,
+            settings.ADMIN_PASSWORD,
+            ADMIN_PASSWORD_WAS_GENERATED,
+        ))
+        print()
     yield
 
 # /docs et /redoc publient l'intégralité du schéma OpenAPI, routes admin

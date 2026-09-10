@@ -1,7 +1,7 @@
 """Script de peuplement initial (Seed) de la base SQLite."""
 from app.database import engine, Base, SessionLocal
 from app.models import AdminUser, Project, EpitechProject
-from app.auth import hash_password
+from app.auth import hash_password, verify_password
 from app.config import settings
 from app.logger import log_success, log_error
 
@@ -328,6 +328,16 @@ def seed_db():
             )
             db.add(admin)
             log_success("seed.py", "seed_db", f"Utilisateur admin '{settings.ADMIN_USERNAME}' initialisé")
+        elif not verify_password(settings.ADMIN_PASSWORD, admin.hashed_password):
+            # Le hash en base ne correspond plus au mot de passe effectif.
+            #
+            # Deux cas mènent ici : ADMIN_PASSWORD a été changé dans .env.local,
+            # ou le fichier data/admin_credentials.json a été supprimé pendant
+            # que la base survivait — auquel cas le mot de passe affiché au
+            # démarrage ne permettrait plus de se connecter. On resynchronise
+            # pour que ce qui est affiché soit toujours ce qui fonctionne.
+            admin.hashed_password = hash_password(settings.ADMIN_PASSWORD)
+            log_success("seed.py", "seed_db", f"Mot de passe de '{settings.ADMIN_USERNAME}' resynchronisé avec la configuration")
 
         # 2. Projets personnels
         if db.query(Project).count() == 0:

@@ -18,14 +18,17 @@ class Settings(BaseSettings):
     LOG_ARCHIVES_DIR: str = str(ARCHIVES_DIR)
 
     # Sécurité & Auth Admin
-    # Ces identifiants par défaut sont volontaires : le panel admin est une
-    # démonstration du portfolio, pas un espace contenant des données sensibles.
-    # Ils restent surchargeables par .env.local / .env sur un vrai déploiement.
-    SECRET_KEY: str = "portfolio_super_secret_jwt_key_change_me_in_prod_2026"
+    #
+    # SECRET_KEY et ADMIN_PASSWORD n'ont volontairement aucune valeur par
+    # défaut : laissée vide, chacune est générée par le serveur au premier
+    # démarrage (app/credentials.py) puis conservée dans le dossier data/.
+    # Plus aucun secret n'est donc écrit en dur dans le dépôt.
+    # Renseigner ces variables dans .env.local désactive la génération.
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
     ADMIN_USERNAME: str = "admin"
-    ADMIN_PASSWORD: str = "admin123"
+    ADMIN_PASSWORD: str = ""
 
     # Nombre de proxys de confiance placés devant l'application.
     #
@@ -78,3 +81,22 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
+
+# ---------------------------------------------------------------------------
+# Secrets générés au premier démarrage
+# ---------------------------------------------------------------------------
+# Réalisé ici, juste après le chargement de la configuration, pour que tous les
+# modules qui lisent settings.SECRET_KEY (signature JWT, empreinte visiteur)
+# voient la valeur définitive dès leur import.
+from app.credentials import ensure_admin_password, ensure_secret_key  # noqa: E402
+
+# Vrai quand le mot de passe vient de l'environnement : dans ce cas, le serveur
+# ne génère rien et n'affiche rien au démarrage.
+ADMIN_PASSWORD_FROM_ENV = bool(settings.ADMIN_PASSWORD)
+
+settings.SECRET_KEY, SECRET_KEY_WAS_GENERATED = ensure_secret_key(
+    settings.SECRET_KEY, DATA_DIR
+)
+settings.ADMIN_PASSWORD, ADMIN_PASSWORD_WAS_GENERATED = ensure_admin_password(
+    settings.ADMIN_PASSWORD, settings.ADMIN_USERNAME, DATA_DIR
+)
