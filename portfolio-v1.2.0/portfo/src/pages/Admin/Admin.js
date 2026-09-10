@@ -15,15 +15,15 @@ export default function Admin({ theme, onToggleTheme }) {
     const [activeTab, setActiveTab] = useState('main');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isUptimeExpanded, setIsUptimeExpanded] = useState(false);
-    useBodyScrollLock(isMenuOpen);
 
-    // Verrouillage du défilement de la page admin pour 0 scroll
-    useEffect(() => {
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, []);
+    // Un seul verrou de défilement pour toute la page admin.
+    //
+    // Il y en avait deux : useBodyScrollLock(isMenuOpen) et un useEffect local.
+    // À chaque fermeture du menu, le premier remettait overflow à 'unset' et
+    // annulait le 'hidden' posé par le second — le "0 scroll" annoncé sautait
+    // dès qu'on refermait le menu. La page admin est toujours verrouillée, que
+    // le menu soit ouvert ou non : un seul appel suffit.
+    useBodyScrollLock(true);
 
     // Login Form State
     const [username, setUsername] = useState('admin');
@@ -218,19 +218,27 @@ export default function Admin({ theme, onToggleTheme }) {
             />
 
             <main className="App-Main admin-main-canvas">
-                <section
-                    className="admin-page-view admin-page-main"
-                    style={{ display: activeTab === 'main' ? 'flex' : 'none' }}
-                >
-                    <AdminUptime
-                        isExpanded={isUptimeExpanded}
-                        onToggleExpand={() => setIsUptimeExpanded((prev) => !prev)}
-                    />
-                    <AdminInfoCards onSelectTab={(tabId) => setActiveTab(tabId)} />
-                    <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
-                        <PixelPetGame />
-                    </div>
-                </section>
+                {/*
+                  Rendu conditionnel, comme les autres onglets.
+
+                  Cette section était seulement masquée en CSS (display: none),
+                  donc jamais démontée : AdminUptime (sondage 10 s),
+                  AdminInfoCards (5 requêtes toutes les 12 s) et la boucle de
+                  rendu du PixelGame continuaient de tourner en permanence,
+                  y compris pendant la consultation des logs.
+                */}
+                {activeTab === 'main' && (
+                    <section className="admin-page-view admin-page-main">
+                        <AdminUptime
+                            isExpanded={isUptimeExpanded}
+                            onToggleExpand={() => setIsUptimeExpanded((prev) => !prev)}
+                        />
+                        <AdminInfoCards onSelectTab={(tabId) => setActiveTab(tabId)} />
+                        <div className={`admin-pixel-pet-collapsible ${isUptimeExpanded ? 'is-collapsed' : 'is-expanded'}`}>
+                            <PixelPetGame />
+                        </div>
+                    </section>
+                )}
                 {activeTab === 'contents' && (
                     <section className="admin-page-view admin-page-contents">
                         {/* Page Contents vide */}

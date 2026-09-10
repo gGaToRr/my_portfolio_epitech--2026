@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { fetchRecentDaysLogs, fetchLiveLogs } from '../../services/api';
+import { cleanLogLine, getLineClass } from '../../utils/logLines';
 import CustomDropdown from '../CustomDropdown/CustomDropdown';
 import './AdminLogs.css';
 
@@ -18,19 +19,6 @@ const LINES_COUNT_OPTIONS = [
     { value: 200, label: '200 lignes / jour' },
     { value: 500, label: '500 lignes / jour' },
 ];
-
-/**
- * Nettoie une ligne de log de tous les caractères de contrôle, codes ANSI (\x1b, \033, \u001b, [92m, [0m)
- * et caractères spéciaux invisibles ou corrompus.
- */
-function cleanLogLine(line) {
-    if (!line) return '';
-    // eslint-disable-next-line no-control-regex
-    const ansiRegex = /\u001b\[[0-9;]*[a-zA-Z]|\x1b\[[0-9;]*[a-zA-Z]|\x1b|\u001b|\[\d+m/g;
-    // eslint-disable-next-line no-control-regex
-    const controlRegex = /[\uFFFD\u0000-\u0008\u000B\u000C\u000E-\u001F]/g;
-    return line.replace(ansiRegex, '').replace(controlRegex, '').trim();
-}
 
 export default function AdminLogs({ onBack }) {
     // Liste des 5 jours (Aujourd'hui + 4 jours précédents)
@@ -117,7 +105,12 @@ export default function AdminLogs({ onBack }) {
 
     // Calcul des logs actifs selon le jour sélectionné (Depuis le cache mémoire)
     // Les anciens logs sont placés en haut de la console (ordre chronologique : passé en haut, présent en bas)
+    // Nettoyage et classification effectués une seule fois par ligne, à chaque
+    // rechargement des logs. Ils étaient auparavant recalculés à chaque rendu,
+    // donc à chaque caractère tapé dans la recherche — jusqu'à 1 000 lignes ×
+    // deux expressions régulières par frappe.
     const activeLogs = useMemo(() => {
+        const rawLines = (() => {
         if (selectedDayKey === 'all') {
             const all = [];
             // days est renvoyé du plus récent au plus ancien par l'API, on inverse pour mettre les anciens jours en haut
@@ -133,13 +126,27 @@ export default function AdminLogs({ onBack }) {
 
         const cached = logsCacheRef.current[selectedDayKey];
         return cached && Array.isArray(cached.lines) ? cached.lines : [];
+        })();
+
+        return rawLines.map((raw) => {
+            const text = cleanLogLine(raw);
+            const className = getLineClass(text);
+            return {
+                text,
+                lower: text.toLowerCase(),
+                upper: text.toUpperCase(),
+                className,
+                isError: className === 'admin-logs-line--error',
+                isAdmin: className === 'admin-logs-line--admin',
+                isSuccess: className === 'admin-logs-line--success',
+            };
+        });
     }, [selectedDayKey, days]);
 
     // Filtres dynamiques (Recherche + Niveau + Méthode HTTP)
     const filteredLogs = useMemo(() => {
         return activeLogs.filter((line) => {
-            const lower = line.toLowerCase();
-            const upper = line.toUpperCase();
+            const { lower, upper } = line;
 
             // 1. Filtre de recherche textuelle
             if (searchTerm && !lower.includes(searchTerm.toLowerCase())) {
@@ -154,31 +161,13 @@ export default function AdminLogs({ onBack }) {
             }
 
             // 3. Filtre de catégorie / niveau
-            if (filterLevel === 'errors') {
-                return (
-                    lower.includes('statut 401') ||
-                    lower.includes('statut 403') ||
-                    lower.includes('statut 404') ||
-                    lower.includes('statut 500') ||
-                    lower.includes('erreur') ||
-                    lower.includes('error') ||
-                    lower.includes('exception') ||
-                    lower.includes('failed') ||
-                    lower.includes('[91m')
-                );
-            }
-            if (filterLevel === 'admin') {
-                return (
-                    lower.includes('/api/admin') ||
-                    lower.includes('/api/auth') ||
-                    lower.includes('paneladmin') ||
-                    lower.includes('[status.py]') ||
-                    lower.includes('[auth.py]')
-                );
-            }
-            if (filterLevel === 'success') {
-                return lower.includes('statut 200') || lower.includes('succès') || lower.includes('success');
-            }
+            // Classification déléguée à utils/logLines.js : les mêmes règles
+            // servent au coloriage des lignes et au compteur d'anomalies du
+            // tableau de bord, qui pouvaient diverger quand chaque composant
+            // avait sa propre copie.
+            if (filterLevel === 'errors') return line.isError;
+            if (filterLevel === 'admin') return line.isAdmin;
+            if (filterLevel === 'success') return line.isSuccess;
 
             return true;
         });
@@ -191,32 +180,6 @@ export default function AdminLogs({ onBack }) {
         }
     }, [selectedDayKey, filterLevel, selectedMethod]);
 
-    const getLineClass = (line) => {
-        const lower = line.toLowerCase();
-        if (
-            lower.includes('statut 500') ||
-            lower.includes('statut 401') ||
-            lower.includes('statut 403') ||
-            lower.includes('statut 404') ||
-            lower.includes('erreur') ||
-            lower.includes('error') ||
-            lower.includes('exception') ||
-            lower.includes('failed') ||
-            lower.includes('[91m')
-        ) {
-            return 'admin-logs-line--error';
-        }
-        if (lower.includes('warning') || lower.includes('avertissement')) {
-            return 'admin-logs-line--warning';
-        }
-        if (lower.includes('/api/admin') || lower.includes('/api/auth')) {
-            return 'admin-logs-line--admin';
-        }
-        if (lower.includes('statut 200') || lower.includes('success') || lower.includes('succès')) {
-            return 'admin-logs-line--success';
-        }
-        return '';
-    };
 
     const totalCachedLines = useMemo(() => {
         return days.reduce((acc, d) => acc + (d.lines?.length || 0), 0);
@@ -388,10 +351,10 @@ export default function AdminLogs({ onBack }) {
                         </div>
                     ) : (
                         filteredLogs.map((line, idx) => (
-                            <div key={idx} className={`admin-logs-line ${getLineClass(line)}`}>
+                            <div key={idx} className={`admin-logs-line ${line.className}`}>
                                 <span className="admin-logs-line-num">{idx + 1}</span>
                                 <span className="admin-logs-line-content">
-                                    {cleanLogLine(line)}
+                                    {line.text}
                                 </span>
                             </div>
                         ))

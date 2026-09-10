@@ -3,6 +3,17 @@ import { getEpitechProjects as getLocalEpitechProjects } from '../data/epitechPr
 
 const API_BASE = process.env.REACT_APP_API_URL || '';
 
+// ----------------- Session admin -----------------
+function clearAdminSession() {
+    try {
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user');
+        sessionStorage.removeItem('admin_logs_viewed_session');
+    } catch (_) {
+        // Stockage indisponible (navigation privée) : rien à nettoyer.
+    }
+}
+
 // ----------------- Helper fetch avec headers -----------------
 async function apiRequest(endpoint, options = {}) {
     const token = localStorage.getItem('admin_token');
@@ -18,10 +29,19 @@ async function apiRequest(endpoint, options = {}) {
     });
 
     if (!response.ok) {
+        // Un 401 signifie que le jeton est expiré ou révoqué. Sans ce nettoyage,
+        // il restait dans localStorage et était renvoyé à chaque appel suivant
+        // jusqu'à une déconnexion manuelle.
+        if (response.status === 401 && token) {
+            clearAdminSession();
+        }
+
         let errorMsg = `Erreur HTTP ${response.status}`;
         try {
             const errData = await response.json();
-            errorMsg = errData.detail || errData.message || errorMsg;
+            errorMsg = typeof errData.detail === 'string'
+                ? errData.detail
+                : (errData.message || errorMsg);
         } catch (_) {}
         throw new Error(errorMsg);
     }
@@ -171,15 +191,18 @@ export async function verifyAdminAuth() {
 }
 
 export function logoutAdmin() {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
-    try {
-        sessionStorage.removeItem('admin_logs_viewed_session');
-    } catch (_) {}
+    clearAdminSession();
 }
 
 // ----------------- System Status & Uptime -----------------
+// /api/status ne renvoie plus que l'état global : le détail (composants,
+// historique, bugs récents avec les IP des visiteurs) est passé derrière
+// l'authentification admin. Seul le panel l'utilise.
 export async function fetchSystemStatus() {
+    return apiRequest('/api/admin/status');
+}
+
+export async function fetchPublicStatus() {
     return apiRequest('/api/status');
 }
 

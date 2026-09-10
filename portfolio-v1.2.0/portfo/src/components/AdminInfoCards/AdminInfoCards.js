@@ -6,6 +6,7 @@ import {
     fetchLiveLogs,
     fetchSystemStatus 
 } from '../../services/api';
+import { isAdminLine, isErrorLine, isTestLine } from '../../utils/logLines';
 import './AdminInfoCards.css';
 
 export default function AdminInfoCards({ customCards, onSelectTab }) {
@@ -50,26 +51,14 @@ export default function AdminInfoCards({ customCards, onSelectTab }) {
 
                 if (logsData.status === 'fulfilled' && logsData.value?.lines) {
                     const rawLines = logsData.value.lines;
+                    // Mêmes règles de classification que la console de logs
+                    // (utils/logLines.js) : les deux écrans comptaient
+                    // auparavant avec leur propre copie des marqueurs, et
+                    // pouvaient donc afficher des totaux incohérents.
                     rawLines.forEach((line) => {
-                        // Exclure les tests automatisés internes pytest
-                        if (line.includes('testclient') || line.includes('testadmin')) return;
-
-                        const lower = line.toLowerCase();
-                        const isAdmin = lower.includes('/api/admin') || lower.includes('/api/auth') || lower.includes('paneladmin');
-                        const isSuspicious = (
-                            lower.includes('statut 401') ||
-                            lower.includes('statut 403') ||
-                            lower.includes('statut 404') ||
-                            lower.includes('statut 500') ||
-                            lower.includes('erreur') ||
-                            lower.includes('error') ||
-                            lower.includes('exception') ||
-                            lower.includes('failed') ||
-                            lower.includes('[91m')
-                        );
-
-                        if (isAdmin) adminCalls++;
-                        if (isSuspicious) suspiciousCalls++;
+                        if (isTestLine(line)) return;
+                        if (isAdminLine(line)) adminCalls++;
+                        if (isErrorLine(line)) suspiciousCalls++;
                     });
                 }
 
