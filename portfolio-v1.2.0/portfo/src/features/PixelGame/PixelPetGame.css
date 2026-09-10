@@ -1,0 +1,363 @@
+/* ==========================================================================
+   PIXEL PET GAME (Combat Cowboy vs Spidey vs Kermit - Pixel Art 8-bit)
+   ========================================================================== */
+
+.admin-pixel-pet-card {
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    border-radius: 20px;
+    padding: 10px 18px 8px;
+    margin-bottom: 0;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.25s ease;
+}
+
+.admin-pixel-pet-card:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .admin-pixel-pet-card:hover {
+    background: rgba(15, 23, 42, 0.02);
+}
+
+/* En-tête de la carte : Score en haut à gauche, Boutons en haut à droite */
+.admin-pixel-pet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 12px;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Compteur de Victoires dans le coin supérieur gauche */
+.admin-pixel-pet-score-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    font-family: monospace, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.admin-pixel-pet-score-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #84cc16;
+    box-shadow: 0 0 10px rgba(132, 204, 22, 0.85);
+    animation: pixel-score-pulse 2s infinite ease-in-out;
+}
+
+@keyframes pixel-score-pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.3);
+        opacity: 0.55;
+    }
+}
+
+.admin-pixel-pet-score-title {
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-right: 2px;
+}
+
+.admin-pixel-pet-score--cowboy {
+    color: #fbbf24;
+    font-weight: 800;
+}
+
+.admin-pixel-pet-score--spidey {
+    color: #60a5fa;
+    font-weight: 800;
+}
+
+.admin-pixel-pet-score--kermit {
+    color: #84cc16;
+    font-weight: 800;
+}
+
+.admin-pixel-pet-score-sep {
+    color: var(--border-strong, rgba(255, 255, 255, 0.2));
+    padding: 0 2px;
+}
+
+/* Boutons d'actions */
+.admin-pixel-pet-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-pixel-fight-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: monospace, sans-serif;
+    letter-spacing: -0.01em;
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--text-strong);
+    border: 1px solid var(--border);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.admin-pixel-fight-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--text-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.admin-pixel-fight-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.admin-pixel-fight-btn.is-fighting {
+    background: var(--surface-hover);
+    border-color: #84cc16;
+    color: #84cc16;
+    cursor: wait;
+    opacity: 0.9;
+}
+
+.admin-pixel-nuke-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: monospace, sans-serif;
+    letter-spacing: -0.01em;
+    border-radius: 9px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.15);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+}
+
+.admin-pixel-nuke-btn:hover:not(:disabled) {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.55);
+}
+
+.admin-pixel-nuke-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.admin-pixel-nuke-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.admin-pixel-nuke-btn.is-nuke-active {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #b91c1c;
+    box-shadow: 0 0 24px rgba(220, 38, 38, 0.8);
+    animation: pixel-nuke-pulse 0.35s infinite alternate;
+}
+
+@keyframes pixel-nuke-pulse {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    100% {
+        transform: scale(1.04);
+        filter: brightness(1.3);
+    }
+}
+
+/* Zone Canevas Grand Format */
+.admin-pixel-pet-canvas-wrap {
+    width: 100%;
+    height: 240px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.admin-pixel-pet-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+/* Bulle de dialogue Pixel Art */
+.admin-pixel-speech-bubble {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    background: var(--surface-strong, #0f172a);
+    color: var(--text-strong, #ffffff);
+    padding: 7px 16px;
+    border-radius: 9px;
+    border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.18));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    font-family: monospace, sans-serif;
+    font-size: 0.84rem;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 20;
+    animation: pixel-bubble-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pixel-bubble-pop {
+    0% {
+        transform: translate(-50%, -85%) scale(0.85);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(-50%, -100%) scale(1);
+        opacity: 1;
+    }
+}
+
+.admin-pixel-speech-arrow {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--surface-strong, #0f172a);
+}
+
+/* Pied de carte */
+.admin-pixel-pet-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 6px;
+    font-size: 0.76rem;
+    font-family: monospace, sans-serif;
+    color: var(--text-muted);
+}
+
+.admin-pixel-pet-status-msg {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.admin-pixel-pet-timer-tag {
+    opacity: 0.75;
+}
+
+/* Adaptations Thème Clair */
+[data-theme="light"] .admin-pixel-pet-score-wrap {
+    background: rgba(241, 245, 249, 0.95);
+    border-color: rgba(148, 163, 184, 0.4);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .admin-pixel-pet-score--cowboy {
+    color: #b45309;
+}
+
+[data-theme="light"] .admin-pixel-pet-score--spidey {
+    color: #1d4ed8;
+}
+
+[data-theme="light"] .admin-pixel-pet-score--kermit {
+    color: #4d7c0f;
+}
+
+[data-theme="light"] .admin-pixel-fight-btn {
+    background: #ffffff;
+    color: #1e293b;
+    border-color: rgba(148, 163, 184, 0.45);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .admin-pixel-fight-btn:hover:not(:disabled) {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.7);
+    color: #0f172a;
+}
+
+[data-theme="light"] .admin-pixel-fight-btn.is-fighting {
+    border-color: #65a30d;
+    color: #4d7c0f;
+    background: rgba(236, 252, 203, 0.8);
+}
+
+[data-theme="light"] .admin-pixel-nuke-btn {
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.35);
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.1);
+}
+
+[data-theme="light"] .admin-pixel-nuke-btn:hover:not(:disabled) {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.35);
+}
+
+[data-theme="light"] .admin-pixel-speech-bubble {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: rgba(148, 163, 184, 0.45);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="light"] .admin-pixel-speech-arrow {
+    border-top-color: #ffffff;
+}
+
+@media (max-width: 860px) {
+    .admin-pixel-pet-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .admin-pixel-pet-actions {
+        width: 100%;
+    }
+
+    .admin-pixel-fight-btn {
+        width: 100%;
+    }
+
+    .admin-pixel-pet-canvas-wrap {
+        height: 200px;
+    }
+}
