@@ -5,10 +5,19 @@ services:
       dockerfile: Dockerfile
     container_name: portfolio_backend
     restart: unless-stopped
+    # Publié uniquement sur la boucle locale.
+    #
+    # "5001:5001" écoutait sur 0.0.0.0 : le backend était donc joignable
+    # directement depuis Internet, en HTTP clair, hors du reverse proxy et de
+    # son TLS — connexion admin et routes /api/admin/* comprises. Le trafic
+    # public passe par nginx -> service "portfolio" -> relais /api -> backend.
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     volumes:
       - ./backend/data:/app/data
+      # Les logs sont écrits dans le conteneur : sans ce montage, ils
+      # disparaissaient à chaque recréation et la console admin repartait vide.
+      - ./backend/logs:/app/logs
     env_file:
       - path: ./backend/.env.local
         required: false
@@ -19,6 +28,9 @@ services:
     environment:
       - API_PORT=5001
       - HOST=0.0.0.0
+      # Deux proxys de confiance devant le backend : nginx, puis le relais
+      # /api/* de server.js. Voir get_client_ip() dans app/security.py.
+      - TRUSTED_PROXY_HOPS=2
 
   portfolio:
     build:
@@ -40,4 +52,7 @@ services:
     environment:
       - NODE_ENV=production
       - API_PORT=5001
+      # Cible du relais /api/* de server.js (nom du service Compose).
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=5001
 

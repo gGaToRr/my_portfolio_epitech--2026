@@ -102,6 +102,8 @@ service_stop() {
     echo -e "${CYAN}===================================================${NC}"
 
     # Arrêt Backend
+    # Note : on arrête ce qui occupe le port, sans vérifier qu'il s'agit bien de
+    # nos processus. Si un autre projet écoute sur 5001 ou 3006, il sera coupé.
     if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
         BACKEND_PIDS=$(lsof -ti:5001)
         echo -e "${YELLOW}Arrêt du Backend sur le port 5001 (PID $BACKEND_PIDS)...${NC}"
@@ -208,6 +210,8 @@ service_logs_front() {
 # 6. TESTS UNITAIRES
 service_test() {
     echo -e "${CYAN}🧪 Exécution de la suite complète de tests unitaires & intégration...${NC}"
+    # pytest et httpx sont dans requirements-dev.txt : ils ne sont plus installés
+    # dans l'image de production.
     cd "$ROOT_DIR"
     PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/pytest" "$ROOT_DIR/backend/tests/" -v
     cleanup_traces
@@ -217,7 +221,7 @@ service_test() {
 service_archive_logs() {
     echo -e "${CYAN}📦 Archivage mensuel des logs quotidiens en .tar.gz...${NC}"
     cd "$ROOT_DIR"
-    PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/python" "$ROOT_DIR/backend/scripts/log_manager.py" --archive-prev
+    PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/python" "$ROOT_DIR/backend/scripts/log_manager.py" --archive-previous
     echo -e "${GREEN}✓ Opération d'archivage terminée.${NC}"
 }
 

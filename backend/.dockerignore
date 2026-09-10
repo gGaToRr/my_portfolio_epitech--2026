@@ -12,3 +12,7 @@ data/*.db
 data/*.sqlite
 .git
 .gitignore
+logs/*.log
+logs/archives/
+tests/
+requirements-dev.txt
