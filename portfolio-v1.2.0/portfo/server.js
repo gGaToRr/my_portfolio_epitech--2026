@@ -1,13 +1,30 @@
+/**
+ * Serveur de production du portfolio.
+ *
+ * Rôle : servir le build React, et relayer /api/* vers le backend FastAPI.
+ *
+ * Ce fichier contenait auparavant une seconde implémentation complète de
+ * /api/contact (nodemailer, rate-limit, honeypot, gabarit HTML), en double de
+ * celle de backend/app/routers/contact.py. Comme nginx envoie tout le trafic
+ * ici, c'était cette copie qui répondait en production — donc les messages
+ * n'étaient jamais enregistrés dans SQLite et l'écran d'administration des
+ * messages restait vide. Le relais règle le problème pour toutes les formes de
+ * déploiement (avec ou sans nginx devant), et supprime la duplication.
+ */
 const http = require('http');
-const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env.local') });
 require('dotenv').config();
 
-const PORT = process.env.API_PORT || 5001;
-const RECEIVER = process.env.CONTACT_RECEIVER_EMAIL || 'pierre.untersinger2@gmail.com';
-const MAX_BODY_BYTES = 50 * 1024; // 50 KB max
+const PORT = Number(process.env.PORT_FRONT || process.env.API_PORT || 5001);
+
+// Backend FastAPI à relayer. En Docker Compose, BACKEND_HOST vaut "backend"
+// (nom du service) ; en local, le backend tourne sur la même machine.
+const BACKEND_HOST = process.env.BACKEND_HOST || '127.0.0.1';
+const BACKEND_PORT = Number(process.env.BACKEND_PORT || 5001);
+
+const BUILD_DIR = path.join(__dirname, 'build');
 
 // MIME Types pour le service de fichiers statiques
 const MIME_TYPES = {
@@ -21,214 +38,135 @@ const MIME_TYPES = {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.txt': 'text/plain; charset=utf-8',
+    '.pdf': 'application/pdf',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.map': 'application/json; charset=utf-8',
 };
 
-// Rate limiting mémoire (max 5 requêtes par IP par fenêtre de 10 min)
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
-const RATE_LIMIT_MAX = 5;
-
-function isRateLimited(ip) {
-    const now = Date.now();
-    const record = rateLimitMap.get(ip) || { count: 0, firstRequest: now };
-
-    if (now - record.firstRequest > RATE_LIMIT_WINDOW) {
-        rateLimitMap.set(ip, { count: 1, firstRequest: now });
-        return false;
-    }
-
-    if (record.count >= RATE_LIMIT_MAX) {
-        return true;
-    }
-
-    record.count++;
-    rateLimitMap.set(ip, record);
-    return false;
-}
-
-// Nettoyage régulier du cache rate limit
-setInterval(() => {
-    const now = Date.now();
-    for (const [ip, record] of rateLimitMap.entries()) {
-        if (now - record.firstRequest > RATE_LIMIT_WINDOW) {
-            rateLimitMap.delete(ip);
-        }
-    }
-}, 5 * 60 * 1000);
-
-// Détection configuration SMTP réelle vs placeholder
-const isPlaceholderPass = Boolean(
-    !process.env.SMTP_PASS ||
-    process.env.SMTP_PASS.includes('ton_mot_de_passe') ||
-    process.env.SMTP_PASS.includes('your_password')
-);
-
-const isSmtpConfigured = Boolean(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS &&
-    !isPlaceholderPass
-);
-
-let transporter = null;
-if (isSmtpConfigured) {
-    transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-}
+// En-têtes de sécurité appliqués à chaque réponse. Le backend FastAPI les posait
+// déjà sur ses propres réponses, mais rien ne les ajoutait sur les pages HTML
+// servies ici — c'est-à-dire sur tout le site public.
+const SECURITY_HEADERS = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
 
 function sendJson(res, statusCode, data) {
     res.writeHead(statusCode, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        ...SECURITY_HEADERS,
     });
     res.end(JSON.stringify(data));
 }
 
-const server = http.createServer((req, res) => {
-    // Gestion CORS Preflight
-    if (req.method === 'OPTIONS') {
-        res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-        });
-        return res.end();
-    }
-
-    const url = new URL(req.url, `http://${req.headers.host}`);
-
-    // Healthcheck
-    if (req.method === 'GET' && url.pathname === '/api/health') {
-        return sendJson(res, 200, {
-            status: 'ok',
-            smtpConfigured: isSmtpConfigured,
-            receiver: RECEIVER,
-        });
-    }
-
-    // Endpoint Contact
-    if (req.method === 'POST' && url.pathname === '/api/contact') {
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-
-        if (isRateLimited(clientIp)) {
-            return sendJson(res, 429, {
-                success: false,
-                message: 'Trop de requêtes. Veuillez patienter quelques minutes avant de réécrire.',
+/**
+ * Relaie la requête telle quelle vers le backend FastAPI.
+ *
+ * Le corps est transmis en flux (`pipe`) plutôt que mis en tampon : plus de
+ * limite de taille à gérer ici, et surtout plus de risque de répondre deux fois
+ * comme le faisait l'ancien garde-fou des 50 Ko (une seconde réponse sur un
+ * flux déjà terminé provoquait un rejet non capturé, qui arrête Node).
+ */
+function proxyToBackend(req, res) {
+    const upstream = http.request(
+        {
+            host: BACKEND_HOST,
+            port: BACKEND_PORT,
+            path: req.url,
+            method: req.method,
+            headers: {
+                ...req.headers,
+                host: `${BACKEND_HOST}:${BACKEND_PORT}`,
+                // On ajoute notre propre vision du pair à X-Forwarded-For, comme
+                // le fait tout proxy. Le backend ne lit que l'entrée ajoutée par
+                // le dernier proxy de confiance (TRUSTED_PROXY_HOPS), ce qui
+                // rend sans effet les valeurs qu'un client aurait forgées.
+                'x-forwarded-for': [req.headers['x-forwarded-for'], req.socket.remoteAddress]
+                    .filter(Boolean)
+                    .join(', '),
+                'x-forwarded-proto': req.headers['x-forwarded-proto'] || 'http',
+            },
+        },
+        (upstreamRes) => {
+            res.writeHead(upstreamRes.statusCode || 502, {
+                ...upstreamRes.headers,
+                ...SECURITY_HEADERS,
             });
+            upstreamRes.pipe(res);
         }
+    );
 
-        let body = '';
-        let bodySize = 0;
+    upstream.on('error', (err) => {
+        console.error('[proxy] Backend injoignable :', err.message);
+        if (!res.headersSent) {
+            sendJson(res, 502, {
+                success: false,
+                message: "Le service est momentanément indisponible.",
+            });
+        } else {
+            res.end();
+        }
+    });
 
-        req.on('data', (chunk) => {
-            bodySize += chunk.length;
-            if (bodySize > MAX_BODY_BYTES) {
-                req.destroy();
-                return sendJson(res, 413, { success: false, message: 'Message trop volumineux.' });
-            }
-            body += chunk;
-        });
+    // Si le client abandonne, on coupe aussi la requête montante.
+    req.on('aborted', () => upstream.destroy());
+    req.pipe(upstream);
+}
 
-        req.on('end', async () => {
-            try {
-                const data = JSON.parse(body || '{}');
-                const { name, email, phone, message, botcheck } = data;
+function serveStatic(req, res, pathname) {
+    // `new URL()` normalise déjà "..", "%2e%2e" et les segments vides selon la
+    // spécification WHATWG. On revérifie tout de même que le chemin résolu reste
+    // sous build/, pour ne pas dépendre d'un détail d'implémentation.
+    let filePath = path.join(BUILD_DIR, pathname === '/' ? 'index.html' : pathname);
+    const resolved = path.resolve(filePath);
 
-                // Protection anti-bot honeypot
-                if (botcheck) {
-                    return sendJson(res, 200, { success: true, message: 'Message envoyé.' });
-                }
-
-                // Validation
-                if (!name || !name.trim()) {
-                    return sendJson(res, 400, { success: false, message: 'Le nom est requis.' });
-                }
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!email || !emailRegex.test(email.trim())) {
-                    return sendJson(res, 400, { success: false, message: 'Adresse email invalide.' });
-                }
-                if (!message || !message.trim()) {
-                    return sendJson(res, 400, { success: false, message: 'Le message est requis.' });
-                }
-
-                const cleanName = String(name).trim().slice(0, 80);
-                const cleanEmail = String(email).trim().slice(0, 120);
-                const cleanPhone = phone ? String(phone).trim().slice(0, 32) : 'Non renseigné';
-                const cleanMsg = String(message).trim().slice(0, 4000);
-
-                const mailOptions = {
-                    from: process.env.SMTP_FROM || `"Portfolio Pierre" <${cleanEmail}>`,
-                    to: RECEIVER,
-                    replyTo: cleanEmail,
-                    subject: `[Portfolio] Nouveau message de ${cleanName}`,
-                    text: `Nom: ${cleanName}\nEmail: ${cleanEmail}\nTéléphone: ${cleanPhone}\n\nMessage:\n${cleanMsg}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                            <h2 style="color: #61dafb; margin-top: 0;">Nouveau message depuis le portfolio</h2>
-                            <p><strong>Nom :</strong> ${cleanName}</p>
-                            <p><strong>Email :</strong> <a href="mailto:${cleanEmail}">${cleanEmail}</a></p>
-                            <p><strong>Téléphone :</strong> ${cleanPhone}</p>
-                            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                            <p><strong>Message :</strong></p>
-                            <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 6px;">${cleanMsg}</p>
-                        </div>
-                    `,
-                };
-
-                if (isSmtpConfigured && transporter) {
-                    await transporter.sendMail(mailOptions);
-                    console.log(`[SMTP] Email envoyé avec succès pour ${cleanName} (${cleanEmail})`);
-                } else {
-                    console.log(`[SMTP LOCAL] Mode local simulé — Message reçu avec succès :`);
-                    console.log(`   De : ${cleanName} <${cleanEmail}> (Tél: ${cleanPhone})`);
-                    console.log(`   Contenu : "${cleanMsg}"`);
-                    console.log(`   (Pour envoyer de vrais emails, définis ton mot de passe SMTP dans .env.local)`);
-                }
-
-                return sendJson(res, 200, {
-                    success: true,
-                    message: 'Votre message a bien été envoyé !',
-                });
-            } catch (err) {
-                console.error('[SMTP Error]', err);
-                return sendJson(res, 500, {
-                    success: false,
-                    message: "Erreur serveur lors de l'envoi du message.",
-                });
-            }
-        });
-
-        return;
+    if (!resolved.startsWith(path.resolve(BUILD_DIR) + path.sep) && resolved !== path.resolve(BUILD_DIR)) {
+        filePath = path.join(BUILD_DIR, 'index.html');
+    } else if (!fs.existsSync(resolved) || fs.statSync(resolved).isDirectory()) {
+        // Repli SPA : toute route inconnue rend l'application React.
+        filePath = path.join(BUILD_DIR, 'index.html');
+    } else {
+        filePath = resolved;
     }
 
-    // Service des fichiers statiques (si build/ existe)
-    const buildDir = path.join(__dirname, 'build');
-    if (fs.existsSync(buildDir) && (req.method === 'GET' || req.method === 'HEAD')) {
-        let filePath = path.join(buildDir, url.pathname === '/' ? 'index.html' : url.pathname);
-        if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-            filePath = path.join(buildDir, 'index.html');
-        }
-        if (fs.existsSync(filePath)) {
-            const ext = path.extname(filePath).toLowerCase();
-            const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-            res.writeHead(200, { 'Content-Type': contentType });
-            return fs.createReadStream(filePath).pipe(res);
-        }
+    if (!fs.existsSync(filePath)) {
+        return sendJson(res, 404, { success: false, message: 'Route introuvable' });
     }
 
-    sendJson(res, 404, { success: false, message: 'Route introuvable' });
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, {
+        'Content-Type': MIME_TYPES[ext] || 'application/octet-stream',
+        ...SECURITY_HEADERS,
+    });
+    return fs.createReadStream(filePath).pipe(res);
+}
+
+const server = http.createServer((req, res) => {
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+
+    // Tout /api/* part au backend : contact, analytics, statut, administration.
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) {
+        return proxyToBackend(req, res);
+    }
+
+    if (req.method === 'GET' || req.method === 'HEAD') {
+        if (fs.existsSync(BUILD_DIR)) {
+            return serveStatic(req, res, url.pathname);
+        }
+        return sendJson(res, 503, {
+            success: false,
+            message: "Build absent : lancez 'npm run build'.",
+        });
+    }
+
+    return sendJson(res, 404, { success: false, message: 'Route introuvable' });
 });
 
 server.listen(PORT, () => {
-    console.log(`🚀 Serveur SMTP Portfolio en écoute sur http://localhost:${PORT}`);
-    console.log(`   Statut SMTP : ${isSmtpConfigured ? '✅ Configuré (envoi réel)' : 'ℹ️  Mode local simulé (compléter .env.local pour l\'envoi réel)'}`);
+    console.log(`🚀 Portfolio en écoute sur http://localhost:${PORT}`);
+    console.log(`   Relais API   : /api/* -> http://${BACKEND_HOST}:${BACKEND_PORT}`);
+    console.log(`   Build React  : ${fs.existsSync(BUILD_DIR) ? '✅ présent' : "⚠️  absent (npm run build)"}`);
 });
