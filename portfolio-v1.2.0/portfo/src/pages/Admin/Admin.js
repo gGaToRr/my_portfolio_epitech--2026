@@ -6,6 +6,7 @@ import AdminInfoCards from '../../components/AdminInfoCards/AdminInfoCards';
 import AdminLogs from '../../components/AdminLogs/AdminLogs';
 import AdminAnalytics from '../../components/AdminAnalytics/AdminAnalytics';
 import AdminContents from '../../components/AdminContents/AdminContents';
+import AdminSettings from '../../components/AdminSettings/AdminSettings';
 import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import PixelPetGame from '../../features/PixelGame/PixelPetGame';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
@@ -239,7 +240,7 @@ export default function Admin({ theme, onToggleTheme }) {
                 )}
                 {activeTab === 'settings' && (
                     <section className="admin-page-view admin-page-settings">
-                        {/* Page Settings vide */}
+                        <AdminSettings onBack={() => setActiveTab('main')} onLogout={handleLogout} />
                     </section>
                 )}
             </main>
