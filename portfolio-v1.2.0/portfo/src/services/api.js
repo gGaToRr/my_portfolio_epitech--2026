@@ -236,6 +236,13 @@ export async function verifyAdminAuth() {
     }
 }
 
+export async function changePassword(currentPassword, newPassword) {
+    return apiRequest('/api/admin/password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+}
+
 export async function logoutAdmin() {
     // Le cookie de session est HttpOnly : seul le serveur peut l'effacer.
     try {

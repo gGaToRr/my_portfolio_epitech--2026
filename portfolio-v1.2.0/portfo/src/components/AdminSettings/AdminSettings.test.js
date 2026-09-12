@@ -2,13 +2,14 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
 import AdminSettings from './AdminSettings';
-import { fetchLogsFiles, triggerLogArchive, clearBugs } from '../../services/api';
+import { fetchLogsFiles, triggerLogArchive, clearBugs, changePassword } from '../../services/api';
 
 jest.mock('../../services/api', () => ({
     verifyAdminAuth: jest.fn(),
     fetchLogsFiles: jest.fn(),
     triggerLogArchive: jest.fn(),
     clearBugs: jest.fn(),
+    changePassword: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -17,6 +18,7 @@ beforeEach(() => {
     });
     triggerLogArchive.mockReset();
     clearBugs.mockReset();
+    changePassword.mockReset();
     window.confirm = jest.fn(() => true);
 });
 
@@ -75,4 +77,69 @@ test('does not call the archive/clear APIs when the confirmation is declined', a
 
     expect(triggerLogArchive).not.toHaveBeenCalled();
     expect(clearBugs).not.toHaveBeenCalled();
+});
+
+describe('password change form', () => {
+    async function fillPasswordForm(user, { current = 'oldpassword1', next = 'newpassword2', confirm = next } = {}) {
+        await user.type(screen.getByLabelText('Mot de passe actuel'), current);
+        await user.type(screen.getByLabelText('Nouveau mot de passe'), next);
+        await user.type(screen.getByLabelText('Confirmer le nouveau mot de passe'), confirm);
+    }
+
+    test('the submit button stays disabled until the form is valid', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<AdminSettings />);
+        const submit = screen.getByRole('button', { name: /^changer le mot de passe$/i });
+        expect(submit).toBeDisabled();
+
+        await fillPasswordForm(user);
+        expect(submit).toBeEnabled();
+    });
+
+    test('rejects a new password that is too short before ever calling the API', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<AdminSettings />);
+
+        await fillPasswordForm(user, { next: 'short', confirm: 'short' });
+
+        expect(screen.getByText(/au moins 8 caractères/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^changer le mot de passe$/i })).toBeDisabled();
+    });
+
+    test('rejects a confirmation that does not match', async () => {
+        const user = userEvent.setup();
+        renderWithProviders(<AdminSettings />);
+
+        await fillPasswordForm(user, { next: 'newpassword2', confirm: 'somethingelse' });
+
+        expect(screen.getByText(/ne correspond pas/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /^changer le mot de passe$/i })).toBeDisabled();
+    });
+
+    test('submits current/new password to the API and clears the form on success', async () => {
+        changePassword.mockResolvedValue({ success: true, message: 'Mot de passe mis à jour.' });
+        const user = userEvent.setup();
+        renderWithProviders(<AdminSettings />);
+
+        await fillPasswordForm(user, { current: 'oldpassword1', next: 'newpassword2' });
+        await user.click(screen.getByRole('button', { name: /^changer le mot de passe$/i }));
+
+        expect(changePassword).toHaveBeenCalledWith('oldpassword1', 'newpassword2');
+        expect(await screen.findByText('Mot de passe mis à jour.')).toBeInTheDocument();
+        expect(screen.getByLabelText('Mot de passe actuel')).toHaveValue('');
+        expect(screen.getByLabelText('Nouveau mot de passe')).toHaveValue('');
+    });
+
+    test('shows the server error when the current password is wrong', async () => {
+        changePassword.mockRejectedValue(new Error('Mot de passe actuel incorrect.'));
+        const user = userEvent.setup();
+        renderWithProviders(<AdminSettings />);
+
+        await fillPasswordForm(user);
+        await user.click(screen.getByRole('button', { name: /^changer le mot de passe$/i }));
+
+        expect(await screen.findByText('Mot de passe actuel incorrect.')).toBeInTheDocument();
+        // L'échec ne doit pas vider ce que la personne avait déjà saisi.
+        expect(screen.getByLabelText('Mot de passe actuel')).toHaveValue('oldpassword1');
+    });
 });

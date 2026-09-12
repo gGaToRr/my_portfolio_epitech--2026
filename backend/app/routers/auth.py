@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import AdminUser
-from app.schemas import LoginRequest, Token
-from app.auth import verify_password, create_access_token, get_current_admin
+from app.schemas import LoginRequest, Token, ChangePasswordRequest
+from app.auth import verify_password, create_access_token, get_current_admin, hash_password
 from app.config import settings
 from app.logger import log_success, log_error, log_warning
 from app.security import RateLimiter, get_client_ip, sanitize_log_value
@@ -23,6 +23,15 @@ router = APIRouter(prefix="/api/admin", tags=["Admin Auth"])
 LOGIN_MAX_ATTEMPTS = 5
 LOGIN_WINDOW_SECONDS = 10 * 60
 login_limiter = RateLimiter(LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_SECONDS, name="login")
+
+# Même logique pour /password : la route exige déjà une session valide, mais
+# une session volée (cookie intercepté, poste laissé ouvert) ne doit pas
+# permettre de deviner le mot de passe actuel par force brute pour autant.
+CHANGE_PASSWORD_MAX_ATTEMPTS = 5
+CHANGE_PASSWORD_WINDOW_SECONDS = 10 * 60
+change_password_limiter = RateLimiter(
+    CHANGE_PASSWORD_MAX_ATTEMPTS, CHANGE_PASSWORD_WINDOW_SECONDS, name="change_password"
+)
 
 def _rate_limit_key(client_ip: str, username: str) -> str:
     return f"{client_ip}|{username}"
@@ -119,3 +128,48 @@ def logout_admin(response: Response):
     response.delete_cookie(settings.COOKIE_NAME, path="/")
     log_success("auth.py", "logout_admin", "Déconnexion admin : cookie de session effacé")
     return {"status": "ok"}
+
+@router.post("/password")
+def change_password(
+    payload: ChangePasswordRequest,
+    request: Request,
+    current_admin: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Change le mot de passe de l'administrateur connecté.
+
+    Exige le mot de passe actuel même si la session est déjà authentifiée :
+    sans ce contrôle, un cookie de session intercepté (ou un poste laissé
+    ouvert) suffirait à changer le mot de passe et verrouiller le vrai
+    titulaire du compte hors de son propre panel.
+    """
+    client_ip = get_client_ip(request)
+    limiter_key = _rate_limit_key(client_ip, current_admin.username)
+
+    remaining = change_password_limiter.check(limiter_key)
+    if remaining is not None:
+        log_warning("auth.py", "change_password", f"Changement de mot de passe bloqué (rate limit) pour IP {client_ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Trop de tentatives. Réessayez dans {remaining} secondes."
+        )
+
+    if not verify_password(payload.current_password, current_admin.hashed_password):
+        change_password_limiter.hit(limiter_key)
+        log_error("auth.py", "change_password", f"Échec de changement de mot de passe pour '{current_admin.username}' (mot de passe actuel incorrect, IP: {client_ip})")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Mot de passe actuel incorrect."
+        )
+
+    if payload.new_password == payload.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le nouveau mot de passe doit être différent de l'actuel."
+        )
+
+    change_password_limiter.reset(limiter_key)
+    current_admin.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    log_success("auth.py", "change_password", f"Mot de passe changé avec succès pour '{current_admin.username}' (IP: {client_ip})")
+    return {"success": True, "message": "Mot de passe mis à jour."}

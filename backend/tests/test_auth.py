@@ -82,3 +82,73 @@ def test_expired_token_rejected(client):
     res = client.get("/api/admin/me", headers={"Authorization": f"Bearer {expired_token}"})
     assert res.status_code == 401
 
+
+# ---------------------------------------------------------------------------
+# Changement de mot de passe
+# ---------------------------------------------------------------------------
+
+def test_change_password_requires_auth(client):
+    res = client.post("/api/admin/password", json={
+        "current_password": "testpassword123", "new_password": "newpassword456",
+    })
+    assert res.status_code == 401
+
+
+def test_change_password_wrong_current_password_rejected(client, auth_headers):
+    res = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "not_the_real_password", "new_password": "newpassword456",
+    })
+    assert res.status_code == 401
+    assert "actuel incorrect" in res.json()["detail"]
+
+    # Le mot de passe d'origine reste valide : rien n'a été modifié.
+    still_works = client.post("/api/admin/login", json={
+        "username": "testadmin", "password": "testpassword123",
+    })
+    assert still_works.status_code == 200
+
+
+def test_change_password_too_short_rejected(client, auth_headers):
+    res = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "testpassword123", "new_password": "short",
+    })
+    assert res.status_code == 422
+
+
+def test_change_password_same_as_current_rejected(client, auth_headers):
+    res = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "testpassword123", "new_password": "testpassword123",
+    })
+    assert res.status_code == 400
+
+
+def test_change_password_success_replaces_the_old_one(client, auth_headers):
+    res = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "testpassword123", "new_password": "newpassword456",
+    })
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+
+    old_password_fails = client.post("/api/admin/login", json={
+        "username": "testadmin", "password": "testpassword123",
+    })
+    assert old_password_fails.status_code == 401
+
+    new_password_works = client.post("/api/admin/login", json={
+        "username": "testadmin", "password": "newpassword456",
+    })
+    assert new_password_works.status_code == 200
+
+
+def test_change_password_rate_limited_on_repeated_wrong_current_password(client, auth_headers):
+    for _ in range(5):
+        res = client.post("/api/admin/password", headers=auth_headers, json={
+            "current_password": "wrong_password", "new_password": "newpassword456",
+        })
+        assert res.status_code == 401
+
+    blocked = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "testpassword123", "new_password": "newpassword456",
+    })
+    assert blocked.status_code == 429
+

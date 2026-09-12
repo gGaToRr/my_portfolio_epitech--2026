@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useEditableContent } from '../../context/EditableContentContext';
-import { fetchLogsFiles, triggerLogArchive, clearBugs } from '../../services/api';
+import { fetchLogsFiles, triggerLogArchive, clearBugs, changePassword } from '../../services/api';
 import './AdminSettings.css';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 const BackIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -65,6 +67,51 @@ export default function AdminSettings({ onBack, onLogout }) {
     const [bugsLoading, setBugsLoading] = useState(false);
 
     const [resetDone, setResetDone] = useState(false);
+
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordStatus, setPasswordStatus] = useState(null);
+
+    // Erreur affichée sous le formulaire pendant la saisie, avant tout envoi :
+    // le serveur revalide de toute façon (longueur minimale, différence avec
+    // l'actuel), ce contrôle client évite juste un aller-retour pour rien.
+    const passwordValidationError = (() => {
+        if (!newPassword) return null;
+        if (newPassword.length < MIN_PASSWORD_LENGTH) return `Au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+        if (currentPassword && newPassword === currentPassword) return 'Doit différer du mot de passe actuel.';
+        if (confirmPassword && newPassword !== confirmPassword) return 'La confirmation ne correspond pas.';
+        return null;
+    })();
+
+    const canSubmitPassword = Boolean(
+        currentPassword
+        && newPassword
+        && confirmPassword
+        && newPassword === confirmPassword
+        && newPassword.length >= MIN_PASSWORD_LENGTH
+        && newPassword !== currentPassword
+    );
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (!canSubmitPassword || passwordLoading) return;
+
+        setPasswordLoading(true);
+        setPasswordStatus(null);
+        try {
+            await changePassword(currentPassword, newPassword);
+            setPasswordStatus({ tone: 'ok', message: 'Mot de passe mis à jour.' });
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (err) {
+            setPasswordStatus({ tone: 'error', message: err.message || 'Échec du changement de mot de passe.' });
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
 
     const loadLogsInfo = async () => {
         setLogsLoading(true);
@@ -180,10 +227,72 @@ export default function AdminSettings({ onBack, onLogout }) {
                                 </div>
                             </div>
                             <div className="admin-info-card__footer">
-                                <span className="admin-info-card__subtitle">Le mot de passe se configure côté serveur (backend/.env.local)</span>
+                                <span className="admin-info-card__subtitle">Changez-le ci-dessous, ou fixez-en un dans backend/.env.local</span>
                             </div>
                         </div>
                     </div>
+
+                    <div className="admin-settings-card">
+                        <div className="admin-settings-card__head">
+                            <span className="admin-settings-card__label">Changer le mot de passe</span>
+                        </div>
+                        <form className="admin-settings-password-form" onSubmit={handleChangePassword}>
+                            <label className="admin-settings-field">
+                                <span className="admin-settings-field__label">Mot de passe actuel</span>
+                                <input
+                                    type="password"
+                                    className="admin-settings-input"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </label>
+                            <label className="admin-settings-field">
+                                <span className="admin-settings-field__label">Nouveau mot de passe</span>
+                                <input
+                                    type="password"
+                                    className="admin-settings-input"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    minLength={MIN_PASSWORD_LENGTH}
+                                    required
+                                />
+                            </label>
+                            <label className="admin-settings-field">
+                                <span className="admin-settings-field__label">Confirmer le nouveau mot de passe</span>
+                                <input
+                                    type="password"
+                                    className="admin-settings-input"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    required
+                                />
+                            </label>
+
+                            {passwordValidationError && (
+                                <p className="admin-settings-inline-status admin-settings-inline-status--neutral">{passwordValidationError}</p>
+                            )}
+
+                            <div className="admin-settings-card__actions">
+                                <button
+                                    type="submit"
+                                    className="admin-settings-btn"
+                                    disabled={!canSubmitPassword || passwordLoading}
+                                >
+                                    {passwordLoading ? 'Changement…' : 'Changer le mot de passe'}
+                                </button>
+                                {passwordStatus && (
+                                    <span className={`admin-settings-inline-status admin-settings-inline-status--${passwordStatus.tone}`}>
+                                        {passwordStatus.message}
+                                    </span>
+                                )}
+                            </div>
+                        </form>
+                    </div>
+
                     {onLogout && (
                         <button type="button" className="admin-settings-btn admin-settings-btn--ghost" onClick={onLogout}>
                             Se déconnecter

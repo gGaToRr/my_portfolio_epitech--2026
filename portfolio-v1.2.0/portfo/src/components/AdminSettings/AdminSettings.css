@@ -207,6 +207,47 @@
 }
 
 /* ----------------------------------------------------
+   FORMULAIRE (changement de mot de passe)
+   ---------------------------------------------------- */
+.admin-settings-password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 360px;
+}
+
+.admin-settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-settings-field__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.admin-settings-input {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-strong);
+    font-size: 0.88rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.admin-settings-input:focus {
+    outline: none;
+    border-color: var(--accent, #10b981);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* ----------------------------------------------------
    4. BOUTONS
    ---------------------------------------------------- */
 .admin-settings-btn {
