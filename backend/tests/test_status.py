@@ -113,3 +113,53 @@ def test_get_recent_days_logs_endpoint(client, auth_headers):
     assert "filename" in data["days"][0]
     assert "label" in data["days"][0]
 
+
+# ---------------------------------------------------------------------------
+# get_system_start_date() : la date affichée pour "depuis quand le système
+# tourne" ne doit plus dépendre du démarrage du processus courant, sinon
+# chaque redéploiement fait "perdre" l'historique déjà accumulé.
+# ---------------------------------------------------------------------------
+
+def test_first_started_at_is_written_once_and_reused(tmp_path, monkeypatch):
+    import app.metrics as metrics_module
+
+    marker = tmp_path / "first_started_at.json"
+    monkeypatch.setattr(metrics_module, "FIRST_START_FILE", marker)
+    monkeypatch.setattr(metrics_tracker, "_find_earliest_known_activity", lambda: None)
+
+    first_call = metrics_tracker._ensure_first_started_at()
+    assert marker.exists()
+
+    # Un second appel (= un redémarrage du processus) doit relire le marqueur
+    # au lieu de recalculer "aujourd'hui" une nouvelle fois.
+    second_call = metrics_tracker._ensure_first_started_at()
+    assert second_call == first_call
+
+
+def test_first_started_at_recovers_the_earliest_known_pageview(tmp_path, monkeypatch, db_session):
+    import app.metrics as metrics_module
+    from app.models import PageView
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy.orm import sessionmaker
+
+    old_date = (datetime.now(timezone.utc) - timedelta(days=3)).date()
+    db_session.add(PageView(
+        path="/", visitor_hash="v1",
+        timestamp=datetime.combine(old_date, datetime.min.time(), tzinfo=timezone.utc),
+    ))
+    db_session.commit()
+
+    marker = tmp_path / "first_started_at.json"
+    monkeypatch.setattr(metrics_module, "FIRST_START_FILE", marker)
+    # _find_earliest_known_activity() ouvre sa propre session via le
+    # SessionLocal global (hors Depends(get_db), donc hors de la substitution
+    # de la fixture `client`) : on la fait pointer vers la même base que
+    # `db_session` pour cette vérification précise.
+    monkeypatch.setattr(metrics_module, "SessionLocal", sessionmaker(bind=db_session.get_bind()))
+
+    resolved = metrics_tracker._ensure_first_started_at()
+
+    # La date retrouvée doit être celle de la plus ancienne visite connue,
+    # pas la date du jour où ce test tourne.
+    assert resolved == old_date
+

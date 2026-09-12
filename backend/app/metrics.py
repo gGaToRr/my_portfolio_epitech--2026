@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta, date
 from typing import Dict, Any, List, Optional
 from collections import deque
-from sqlalchemy import text
+from sqlalchemy import text, func
 from app.config import settings, DATA_DIR
 from app.database import engine, SessionLocal
 from app.models import DailyUptimeLog
@@ -16,6 +16,7 @@ from app.models import DailyUptimeLog
 START_TIME = time.time()
 START_DATETIME = datetime.now(timezone.utc)
 HEARTBEAT_FILE = DATA_DIR / "heartbeat.json"
+FIRST_START_FILE = DATA_DIR / "first_started_at.json"
 
 class SystemMetricsTracker:
     def __init__(self, max_recent_errors: int = 50):
@@ -44,6 +45,9 @@ class SystemMetricsTracker:
 
         # Initialisation du heartbeat et détection d'arrêt passé
         self._init_heartbeat_system()
+
+        # Calculé une seule fois par processus : voir _ensure_first_started_at().
+        self.first_started_date: date = self._ensure_first_started_at()
 
     def _get_today_str(self) -> str:
         return datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -395,17 +399,66 @@ class SystemMetricsTracker:
         }
 
     def get_system_start_date(self) -> date:
-        """Détermine la première date où le système d'uptime a été configuré/démarré."""
+        """Date de mise en service, stable à travers les redémarrages (voir _ensure_first_started_at)."""
+        return self.first_started_date
+
+    def _ensure_first_started_at(self) -> date:
+        """
+        Date de premier démarrage du système, persistée une seule fois.
+
+        L'ancienne version se rabattait sur le DailyUptimeLog le plus ancien —
+        qui n'existe que si une coupure a déjà été détectée par le heartbeat.
+        Un service qui tourne sans interruption n'en écrit jamais aucun, donc
+        le repli utilisait la date de démarrage du *processus courant*
+        (START_DATETIME), qui change à chaque redémarrage. Un simple
+        redéploiement suffisait alors à faire "perdre" plusieurs jours
+        d'historique affichés, sans qu'aucune donnée ne soit réellement
+        perdue : seul ce repère de date se réinitialisait.
+        """
+        if FIRST_START_FILE.exists():
+            try:
+                with open(FIRST_START_FILE, "r", encoding="utf-8") as f:
+                    stored = json.load(f).get("first_started_at")
+                if stored:
+                    return datetime.strptime(stored, "%Y-%m-%d").date()
+            except Exception:
+                pass
+
+        # Premier démarrage avec ce marqueur : on essaie de retrouver une
+        # activité déjà ancienne plutôt que d'amorcer bêtement sur "aujourd'hui"
+        # un système qui tournait peut-être depuis plusieurs jours.
+        recovered = self._find_earliest_known_activity()
+        resolved = recovered or self.start_datetime.date()
+
+        try:
+            with open(FIRST_START_FILE, "w", encoding="utf-8") as f:
+                json.dump({"first_started_at": resolved.strftime("%Y-%m-%d")}, f)
+        except Exception:
+            pass
+        return resolved
+
+    def _find_earliest_known_activity(self) -> Optional[date]:
+        """Meilleure estimation dispo pour amorcer first_started_at une seule fois."""
         session = SessionLocal()
         try:
-            earliest_log = session.query(DailyUptimeLog).order_by(DailyUptimeLog.date_str.asc()).first()
-            if earliest_log and earliest_log.date_str:
-                return datetime.strptime(earliest_log.date_str, "%Y-%m-%d").date()
+            from app.models import PageView
+            earliest_view = session.query(func.min(PageView.timestamp)).scalar()
+            if earliest_view:
+                return earliest_view.date()
         except Exception:
             pass
         finally:
             session.close()
-        return self.start_datetime.date()
+
+        try:
+            log_files = list(Path(settings.LOG_FILE).parent.glob("*.log"))
+            if log_files:
+                oldest = min(log_files, key=lambda p: p.stat().st_mtime)
+                return datetime.fromtimestamp(oldest.stat().st_mtime, tz=timezone.utc).date()
+        except Exception:
+            pass
+
+        return None
 
     def get_daily_history(
         self,
