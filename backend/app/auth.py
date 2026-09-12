@@ -2,7 +2,7 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -49,18 +49,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 def get_current_admin(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
 ) -> AdminUser:
-    """Dépendance FastAPI pour protéger les routes Admin."""
-    if not credentials:
-        log_error("auth.py", "get_current_admin", "Accès refusé (401) : Token d'authentification Bearer manquant")
+    """Dépendance FastAPI pour protéger les routes Admin.
+
+    Le jeton est lu d'abord dans le cookie HttpOnly de session : inaccessible au
+    JavaScript, il n'est donc pas volable par une XSS. Repli sur l'en-tête
+    Authorization Bearer pour ne casser aucun appel existant pendant la transition.
+    """
+    token = request.cookies.get(settings.COOKIE_NAME)
+    if not token and credentials:
+        token = credentials.credentials
+    if not token:
+        log_error("auth.py", "get_current_admin", "Accès refusé (401) : aucun jeton (cookie ni Bearer)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token d'authentification manquant",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         username: str = payload.get("sub")

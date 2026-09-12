@@ -23,6 +23,8 @@ os.environ["SECRET_KEY"] = "test-secret-key-for-unit-tests-123456789"
 os.environ["LOG_FILE"] = os.path.join(_test_tmp_dir, "test_portfolio.log")
 os.environ["TRUSTED_PROXY_HOPS"] = "0"
 os.environ["DEBUG"] = "False"
+# Cookie de session en clair pour les tests (TestClient parle en http, comme le dev).
+os.environ["COOKIE_SECURE"] = "False"
 os.environ["ENABLE_DOCS"] = "False"
 os.environ["CORS_ORIGINS"] = "http://localhost:3006"
 # SMTP neutralisé : aucun test ne doit pouvoir ouvrir une connexion sortante.

@@ -16,23 +16,23 @@ function clearAdminSession() {
 
 // ----------------- Helper fetch avec headers -----------------
 async function apiRequest(endpoint, options = {}) {
-    const token = localStorage.getItem('admin_token');
     const headers = {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
     };
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
+        // Le jeton de session vit dans un cookie HttpOnly, inaccessible au
+        // JavaScript : le navigateur le joint automatiquement via credentials.
+        credentials: 'include',
         headers,
     });
 
     if (!response.ok) {
-        // Un 401 signifie que le jeton est expiré ou révoqué. Sans ce nettoyage,
-        // il restait dans localStorage et était renvoyé à chaque appel suivant
-        // jusqu'à une déconnexion manuelle.
-        if (response.status === 401 && token) {
+        // Un 401 signifie que la session est expirée ou révoquée : on nettoie
+        // l'état local non sensible (le cookie, lui, est géré par le serveur).
+        if (response.status === 401) {
             clearAdminSession();
         }
 
@@ -188,28 +188,29 @@ export async function fetchAnalyticsOverview(days = 30) {
 }
 
 /**
- * Récupère un graphique SVG rendu par le serveur et renvoie une URL d'objet.
+ * Récupère un graphique SVG rendu par le serveur et le renvoie en data URI.
  *
- * Un <img src="/api/..."> ne conviendrait pas : le navigateur n'y joint aucun
- * en-tête, donc pas de jeton d'authentification. On télécharge donc l'image
- * nous-mêmes avec le jeton, puis on l'expose via une URL blob.
- *
- * L'appelant doit libérer l'URL avec URL.revokeObjectURL() : sans cela chaque
- * changement de période ou de thème laisse un blob en mémoire.
+ * Un <img src="/api/..."> ne conviendrait pas : l'appelant a besoin d'annuler
+ * la requête (AbortSignal, lors d'un changement de période) et de distinguer
+ * l'échec d'un graphique précis pour l'afficher dans sa carte, ce qu'un
+ * évènement onError d'<img> ne permet pas facilement. On télécharge donc le
+ * SVG nous-mêmes, puis on l'expose en data: URI — pas d'URL blob à libérer
+ * avec revokeObjectURL().
  */
 export async function fetchAnalyticsChart(name, { days = 30, theme = 'light', signal } = {}) {
-    const token = localStorage.getItem('admin_token');
     const query = new URLSearchParams({ days: String(days), theme });
 
     const response = await fetch(`${API_BASE}/api/admin/analytics/chart/${name}?${query}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        // Cookie HttpOnly joint automatiquement ; aucun jeton à lire en JS.
+        credentials: 'include',
         signal,
     });
 
     if (!response.ok) {
         throw new Error(`Graphique « ${name} » indisponible (HTTP ${response.status})`);
     }
-    return URL.createObjectURL(await response.blob());
+    const svgText = await response.text();
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgText)}`;
 }
 
 // ----------------- Auth Admin -----------------
@@ -218,9 +219,10 @@ export async function loginAdmin(username, password) {
         method: 'POST',
         body: JSON.stringify({ username, password }),
     });
-    if (data && data.access_token) {
-        localStorage.setItem('admin_token', data.access_token);
-        localStorage.setItem('admin_user', data.username);
+    // La réponse pose un cookie de session HttpOnly : on ne stocke plus le jeton
+    // en JavaScript. On conserve seulement le nom affiché, qui n'est pas un secret.
+    if (data && data.username) {
+        try { localStorage.setItem('admin_user', data.username); } catch (_) {}
     }
     return data;
 }
@@ -234,7 +236,13 @@ export async function verifyAdminAuth() {
     }
 }
 
-export function logoutAdmin() {
+export async function logoutAdmin() {
+    // Le cookie de session est HttpOnly : seul le serveur peut l'effacer.
+    try {
+        await apiRequest('/api/admin/logout', { method: 'POST' });
+    } catch (_) {
+        // Même si l'appel échoue, on nettoie l'état local.
+    }
     clearAdminSession();
 }
 

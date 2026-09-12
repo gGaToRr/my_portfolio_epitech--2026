@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = ""
 
+    # Auth admin par cookie HttpOnly (remplace le JWT exposé en localStorage,
+    # volable par une XSS). Le jeton reste un JWT signé : seul son transport change.
+    COOKIE_NAME: str = "admin_session"
+    # Secure = cookie envoyé en HTTPS uniquement. True en prod ; mettre
+    # COOKIE_SECURE=False dans backend/.env.local pour un dev en http://localhost.
+    COOKIE_SECURE: bool = True
+
     # Nombre de proxys de confiance placés devant l'application.
     #
     # X-Forwarded-For est un en-tête que le client peut écrire lui-même : le

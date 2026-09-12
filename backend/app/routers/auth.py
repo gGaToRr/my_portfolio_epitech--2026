@@ -1,5 +1,5 @@
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -45,7 +45,7 @@ def record_successful_login(client_ip: str, username: str = ""):
     login_limiter.reset(_rate_limit_key(client_ip, username))
 
 @router.post("/login", response_model=Token)
-def login_admin(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
+def login_admin(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
     client_ip = get_client_ip(request)
 
     check_login_rate_limit(client_ip, payload.username)
@@ -84,6 +84,18 @@ def login_admin(payload: LoginRequest, request: Request, db: Session = Depends(g
 
     record_successful_login(client_ip, payload.username)
     access_token = create_access_token(data={"sub": user.username})
+    # Jeton posé en cookie HttpOnly : le JavaScript ne peut plus le lire, donc une
+    # éventuelle XSS ne peut plus l'exfiltrer. SameSite=Strict protège du CSRF
+    # (front et API sont same-origin, via nginx en prod et le proxy CRA en dev).
+    response.set_cookie(
+        key=settings.COOKIE_NAME,
+        value=access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite="strict",
+        path="/",
+    )
     log_success("auth.py", "login_admin", f"Connexion réussie pour l'administrateur '{user.username}' (IP: {client_ip})")
     return {
         "access_token": access_token,
@@ -99,3 +111,11 @@ def get_me(current_admin: AdminUser = Depends(get_current_admin)):
         "username": current_admin.username,
         "authenticated": True
     }
+
+@router.post("/logout")
+def logout_admin(response: Response):
+    """Efface le cookie de session. Sans jeton en localStorage, la déconnexion
+    côté serveur devient nécessaire pour invalider la session du navigateur."""
+    response.delete_cookie(settings.COOKIE_NAME, path="/")
+    log_success("auth.py", "logout_admin", "Déconnexion admin : cookie de session effacé")
+    return {"status": "ok"}
