@@ -36,6 +36,19 @@ change_password_limiter = RateLimiter(
 def _rate_limit_key(client_ip: str, username: str) -> str:
     return f"{client_ip}|{username}"
 
+def _safe_compare(a: str, b: str) -> bool:
+    """compare_digest, sans le TypeError sur les chaînes non-ASCII.
+
+    secrets.compare_digest() n'accepte que de l'ASCII pur et lève une
+    exception sur tout le reste (accents compris) plutôt que de simplement
+    renvoyer False. Un texte non-ASCII n'a alors aucune raison d'être égal à
+    l'autre valeur : on le traite comme un échec de comparaison ordinaire.
+    """
+    try:
+        return secrets.compare_digest(a, b)
+    except TypeError:
+        return False
+
 def check_login_rate_limit(client_ip: str, username: str = ""):
     """Lève un 429 si la fenêtre courante est saturée pour ce couple IP/compte."""
     remaining = login_limiter.check(_rate_limit_key(client_ip, username))
@@ -65,11 +78,20 @@ def login_admin(payload: LoginRequest, request: Request, response: Response, db:
     # compare_digest plutôt que == : la comparaison de chaînes s'arrête au
     # premier caractère différent et laisse fuiter la longueur du préfixe
     # correct par le temps de réponse.
+    #
+    # `not user` en tête, avant les compare_digest : au-delà de l'évidence (une
+    # fois le compte créé, cette branche ne sert plus jamais), compare_digest
+    # refuse par TypeError toute chaîne non-ASCII. Sans ce court-circuit, un
+    # mot de passe avec un accent (é, à...) faisait planter TOUTES les
+    # connexions en 500 — y compris une fois le compte bootstrapé depuis
+    # longtemps — puisque cette ligne s'exécutait avant même de regarder si
+    # `user` existait déjà.
     is_bootstrap_login = (
-        secrets.compare_digest(payload.username, settings.ADMIN_USERNAME)
-        and secrets.compare_digest(payload.password, settings.ADMIN_PASSWORD)
+        not user
+        and _safe_compare(payload.username, settings.ADMIN_USERNAME)
+        and _safe_compare(payload.password, settings.ADMIN_PASSWORD)
     )
-    if not user and is_bootstrap_login:
+    if is_bootstrap_login:
         from app.auth import hash_password
         user = AdminUser(
             username=settings.ADMIN_USERNAME,

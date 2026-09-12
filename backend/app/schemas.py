@@ -17,6 +17,19 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
 
+    @field_validator("new_password")
+    @classmethod
+    def new_password_must_be_ascii(cls, value: str) -> str:
+        # secrets.compare_digest(), utilisé à la connexion pour le mot de passe
+        # d'amorçage, refuse tout caractère non-ASCII (TypeError). Un mot de
+        # passe avec un accent choisi ici rendait alors TOUTE connexion
+        # ultérieure impossible (500 au lieu d'un simple refus) : on bloque ce
+        # choix à la source plutôt que de compter sur compare_digest() partout
+        # ailleurs dans le code pour rester prudent.
+        if not value.isascii():
+            raise ValueError("Le mot de passe ne doit contenir que des caractères ASCII (pas d'accents, pas d'emoji).")
+        return value
+
 # ----------------- Project Section Schema -----------------
 class ProjectSectionSchema(BaseModel):
     heading: str

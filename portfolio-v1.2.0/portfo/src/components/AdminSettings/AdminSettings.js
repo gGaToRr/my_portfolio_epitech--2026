@@ -80,6 +80,8 @@ export default function AdminSettings({ onBack, onLogout }) {
     const passwordValidationError = (() => {
         if (!newPassword) return null;
         if (newPassword.length < MIN_PASSWORD_LENGTH) return `Au moins ${MIN_PASSWORD_LENGTH} caractères.`;
+        // eslint-disable-next-line no-control-regex
+        if (!/^[\x00-\x7F]*$/.test(newPassword)) return "Caractères ASCII uniquement (pas d'accents, pas d'emoji).";
         if (currentPassword && newPassword === currentPassword) return 'Doit différer du mot de passe actuel.';
         if (confirmPassword && newPassword !== confirmPassword) return 'La confirmation ne correspond pas.';
         return null;
@@ -91,6 +93,8 @@ export default function AdminSettings({ onBack, onLogout }) {
         && confirmPassword
         && newPassword === confirmPassword
         && newPassword.length >= MIN_PASSWORD_LENGTH
+        // eslint-disable-next-line no-control-regex
+        && /^[\x00-\x7F]*$/.test(newPassword)
         && newPassword !== currentPassword
     );
 

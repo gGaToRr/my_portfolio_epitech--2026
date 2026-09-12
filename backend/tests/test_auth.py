@@ -152,3 +152,52 @@ def test_change_password_rate_limited_on_repeated_wrong_current_password(client,
     })
     assert blocked.status_code == 429
 
+
+def test_change_password_rejects_non_ascii_new_password(client, auth_headers):
+    res = client.post("/api/admin/password", headers=auth_headers, json={
+        "current_password": "testpassword123", "new_password": "café_du_matin_9",
+    })
+    assert res.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# secrets.compare_digest() refuse toute chaîne non-ASCII (TypeError) : un mot
+# de passe accentué faisait planter login_admin en 500 au lieu d'un simple 401,
+# parce que la comparaison d'amorçage s'exécutait avant même de vérifier si le
+# compte existait déjà.
+# ---------------------------------------------------------------------------
+
+def test_safe_compare_returns_false_instead_of_raising_on_non_ascii():
+    from app.routers.auth import _safe_compare
+    assert _safe_compare("café", "testpassword123") is False
+    assert _safe_compare("testpassword123", "café") is False
+    assert _safe_compare("testpassword123", "testpassword123") is True
+    assert _safe_compare("testpassword123", "wrong") is False
+
+
+def test_login_with_non_ascii_password_fails_cleanly_for_an_existing_account(client):
+    # Le compte "testadmin" existe déjà (fixture db_session) : c'est
+    # exactement le cas qui plantait, puisque le court-circuit sur `not user`
+    # est justement ce qui manquait.
+    res = client.post("/api/admin/login", json={
+        "username": "testadmin", "password": "café_du_matin_9",
+    })
+    assert res.status_code == 401
+
+
+def test_bootstrap_login_with_non_ascii_password_fails_cleanly(client, db_session, monkeypatch):
+    from app.config import settings
+    from app.models import AdminUser
+
+    # Aucun compte pour cet utilisateur : on retombe sur la comparaison
+    # d'amorçage face à settings.ADMIN_PASSWORD.
+    db_session.query(AdminUser).filter(AdminUser.username == "testadmin").delete()
+    db_session.commit()
+    monkeypatch.setattr(settings, "ADMIN_USERNAME", "testadmin")
+    monkeypatch.setattr(settings, "ADMIN_PASSWORD", "testpassword123")
+
+    res = client.post("/api/admin/login", json={
+        "username": "testadmin", "password": "café_du_matin_9",
+    })
+    assert res.status_code == 401
+
