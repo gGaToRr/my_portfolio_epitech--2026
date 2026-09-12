@@ -151,8 +151,20 @@ export default function AdminUptime({ isExpanded: controlledIsExpanded, onToggle
         return `Aujourd'hui (${today.getDate()} ${months[today.getMonth()]})`;
     }, [liveData?.history?.general]);
 
-    const isSystemOperational = !isOffline && (!liveData || liveData.status === 'operational');
-    
+    // Le backend renvoie 3 états ('operational' / 'degraded' / 'critical') :
+    // ramener ça à un simple booléen (comme avant) forçait tout ce qui n'était
+    // pas 'operational' vers l'icône rouge "outage", même un simple
+    // 'degraded' — alors que la barre du jour juste en dessous, calculée
+    // séparément, pouvait légitimement rester verte. Les deux affichaient
+    // alors des couleurs contradictoires pour le même service.
+    const generalStatus = isOffline
+        ? 'outage'
+        : !liveData || liveData.status === 'operational'
+            ? 'operational'
+            : liveData.status === 'degraded'
+                ? 'degraded'
+                : 'outage';
+
     // Détection d'état pour chaque composant
     const apiLabel = isOffline 
         ? 'Service API arrêté' 
@@ -189,7 +201,7 @@ export default function AdminUptime({ isExpanded: controlledIsExpanded, onToggle
         {
             id: 'general',
             name: 'Uptime Général',
-            status: isSystemOperational ? 'operational' : 'outage',
+            status: generalStatus,
             hasInfo: true,
             componentsLabel: isOffline ? 'Système arrêté' : `Actif (${realTimeUptimeHuman})`,
             uptime: isOffline ? '0% (Arrêté)' : (liveData?.metrics?.success_rate ? `${liveData.metrics.success_rate} uptime` : '100% uptime'),

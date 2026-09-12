@@ -50,6 +50,39 @@ def test_metrics_tracker_request_recording():
     assert tracker.client_errors == 1
     assert tracker.server_errors == 1
 
+def test_status_icon_and_bar_agree_on_degraded_state():
+    """
+    check_*_health() (icône + libellé du service) et get_daily_history()
+    (barre du jour juste en dessous) doivent trancher pareil pour le même
+    service au même instant : l'un utilisait les erreurs cumulées depuis le
+    démarrage du processus, l'autre celles du jour -- deux compteurs
+    différents pour la même question, donc parfois deux couleurs différentes
+    pour le même incident.
+    """
+    tracker = SystemMetricsTracker()
+    tracker.record_request(200)
+    tracker.record_request(500)
+    tracker.record_request(500)
+
+    summary = tracker.get_status_summary()
+
+    assert summary["status"] == summary["history"]["general"][-1]["status"]
+    assert summary["components"]["backend"]["status"] == summary["history"]["backend"][-1]["status"]
+    assert summary["components"]["api"]["status"] == summary["history"]["api"][-1]["status"]
+    # Concrètement, avec de vraies erreurs serveur aujourd'hui : plus jamais "operational".
+    assert summary["status"] != "operational"
+
+
+def test_today_server_errors_ignores_previous_days(monkeypatch):
+    """today_server_errors() ne doit compter que le jour courant, pas le cumul du processus."""
+    tracker = SystemMetricsTracker()
+    tracker.daily_metrics["2020-01-01"] = {"total": 10, "successful": 5, "client_errors": 0, "server_errors": 5}
+    assert tracker.today_server_errors() == 0
+
+    tracker.record_request(500)
+    assert tracker.today_server_errors() == 1
+
+
 def test_metrics_tracker_bug_recording():
     tracker = SystemMetricsTracker()
     tracker.record_bug("NullPointerException", "Cannot read properties", "/projects/test", "127.0.0.1")

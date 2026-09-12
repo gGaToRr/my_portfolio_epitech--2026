@@ -116,6 +116,24 @@ class SystemMetricsTracker:
             time.sleep(30)
             self._save_heartbeat()
 
+    def today_server_errors(self) -> int:
+        """
+        Erreurs 500 du jour courant, pas depuis le dernier démarrage.
+
+        check_backend_health(), check_api_health() et get_status_summary()
+        utilisaient self.server_errors (cumulé depuis le démarrage du
+        processus) pour décider si un service est "degraded", alors que les
+        barres d'historique du jour (get_daily_history) se basaient sur
+        self.daily_metrics du jour — deux compteurs différents pour la même
+        question. Résultat : une icône orange/rouge pouvait rester affichée
+        des heures après un incident isolé et résolu, alors que la barre du
+        jour, elle, ne bougeait pas ; ou l'inverse. Un seul et même compteur
+        (celui du jour) tranche maintenant partout.
+        """
+        with self._lock:
+            today = self._get_today_str()
+            return self.daily_metrics.get(today, {}).get("server_errors", 0)
+
     def record_request(self, status_code: int):
         with self._lock:
             self.total_requests += 1
@@ -253,7 +271,7 @@ class SystemMetricsTracker:
         )
 
         is_docker_running = api_docker is not None and api_docker.get("is_running", False)
-        server_errs = self.server_errors
+        server_errs = self.today_server_errors()
 
         if is_docker_running:
             label = f"Docker actif ({api_docker['name']}) • Port {settings.API_PORT}"
@@ -278,14 +296,24 @@ class SystemMetricsTracker:
         """Surveille le trafic et les endpoints de l'API (requêtes, succès, erreurs)."""
         total = self.total_requests
         successful = self.successful_requests
-        server_errs = self.server_errors
+        server_errs = self.today_server_errors()
 
         if total > 0:
             success_rate = f"{round((successful / total) * 100, 2)}%"
         else:
             success_rate = "100.0%"
 
-        status = "operational" if server_errs == 0 else ("degraded" if server_errs < 5 else "outage")
+        # Même seuil que la barre du jour dans get_daily_history() : un taux de
+        # succès (pas un nombre brut d'erreurs) sur les requêtes du jour, sinon
+        # les deux pouvaient trancher différemment pour le même incident.
+        with self._lock:
+            today_total = self.daily_metrics.get(self._get_today_str(), {}).get("total", 0)
+        today_success_pct = round(((today_total - server_errs) / max(today_total, 1)) * 100, 2) if today_total else 100.0
+
+        if server_errs == 0:
+            status = "operational"
+        else:
+            status = "degraded" if today_success_pct >= 95.0 else "outage"
         label = f"{total} requête{'s' if total > 1 else ''} traitée{'s' if total > 1 else ''} ({success_rate} succès)"
 
         return {
@@ -537,15 +565,24 @@ class SystemMetricsTracker:
             is_today = (i == 0)
 
             # --- Backend Service ---
+            # Reprend le statut déjà calculé par check_backend_health() (qui
+            # tient compte des erreurs du jour) plutôt que de le recalculer
+            # avec un critère différent : sinon l'icône du service et la barre
+            # du jour pouvaient afficher deux couleurs différentes pour la
+            # même chose au même instant.
             if is_today:
-                if backend_is_up:
-                    be_status = "operational"
-                    be_pct = 100.0
-                    be_label = f"100% opérationnel ({backend_health.get('label')})"
-                else:
+                if not backend_is_up:
                     be_status = "outage"
                     be_pct = 0.0
                     be_label = "Serveur Backend arrêté"
+                elif backend_health.get("status") == "degraded":
+                    be_status = "degraded"
+                    be_pct = round(max(0.0, 100.0 - self.today_server_errors()), 1)
+                    be_label = f"Erreurs serveur détectées ({backend_health.get('label')})"
+                else:
+                    be_status = "operational"
+                    be_pct = 100.0
+                    be_label = f"100% opérationnel ({backend_health.get('label')})"
             else:
                 log_entry = db_logs_map.get("backend", {}).get(day_str)
                 if log_entry:
@@ -651,16 +688,26 @@ class SystemMetricsTracker:
                     smtp_label = "100% opérationnel" if smtp_is_up else "Conteneur Docker SMTP éteint"
 
             # --- General / Global Service ---
+            # Même critère qu'overall_status dans get_status_summary() : un
+            # service up mais qui a renvoyé des 500 aujourd'hui n'est pas
+            # "100% opérationnel" pour autant, sans quoi la barre du jour et
+            # l'icône globale (qui, elle, tient compte des erreurs) se
+            # contredisaient sous les yeux de l'admin.
             if is_today:
                 core_services_up = backend_is_up and db_is_up and front_is_up
-                if core_services_up:
-                    gen_status = "operational"
-                    gen_pct = 100.0
-                    gen_label = "100% opérationnel (Services Backend, Web & Données actifs)"
-                else:
+                today_errs = self.today_server_errors()
+                if not core_services_up:
                     gen_status = "outage"
                     gen_pct = 0.0
                     gen_label = "Panne critique d'un ou plusieurs services"
+                elif today_errs > 0:
+                    gen_status = "degraded"
+                    gen_pct = round(max(0.0, 100.0 - today_errs), 1)
+                    gen_label = f"Erreurs serveur détectées aujourd'hui ({today_errs})"
+                else:
+                    gen_status = "operational"
+                    gen_pct = 100.0
+                    gen_label = "100% opérationnel (Services Backend, Web & Données actifs)"
             else:
                 log_entry = db_logs_map.get("general", {}).get(day_str)
                 if log_entry:
@@ -759,7 +806,7 @@ class SystemMetricsTracker:
             "smtp": smtp_info,
         }
 
-        is_healthy = db_info.get("is_active", True) and backend_info.get("is_active", True) and server_err == 0
+        is_healthy = db_info.get("is_active", True) and backend_info.get("is_active", True) and self.today_server_errors() == 0
         overall_status = "operational" if is_healthy else ("degraded" if db_info.get("is_active", True) else "critical")
         # On passe les sondes déjà faites plutôt que de les relancer.
         history = self.get_daily_history(max_days=65, health=health)
