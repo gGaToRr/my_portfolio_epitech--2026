@@ -45,8 +45,14 @@ services:
       dockerfile: Dockerfile
     container_name: pierre_portfolio
     restart: unless-stopped
+    # Publié uniquement sur la boucle locale, comme le backend ci-dessus.
+    #
+    # En "0.0.0.0" le site répondait aussi en HTTP clair sur http://<ip>:3006,
+    # hors nginx et hors TLS : ufw n'y changeait rien, Docker insérant ses
+    # propres règles iptables en amont des siennes. nginx atteint le
+    # conteneur via 127.0.0.1:3006.
     ports:
-      - "${PORT:-3006}:5001"
+      - "127.0.0.1:${PORT:-3006}:5001"
     depends_on:
       - backend
     env_file:
