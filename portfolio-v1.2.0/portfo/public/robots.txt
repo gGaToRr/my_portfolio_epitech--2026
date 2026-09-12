@@ -1,3 +1,5 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Disallow: /panelAdmin
+Disallow: /api/admin/
+
+Sitemap: https://pierre-untersinger.site/sitemap.xml

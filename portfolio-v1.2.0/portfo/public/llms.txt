@@ -1,0 +1,15 @@
+# Pierre Untersinger — Portfolio
+
+> Portfolio d'ingénierie de Pierre Untersinger, étudiant en ingénierie à Epitech Marseille (promo 2028), en recherche d'alternance / stage. Réseaux, Cloud, cybersécurité et développement full-stack (React, FastAPI).
+
+## Pages
+
+- [Accueil](https://pierre-untersinger.site/): présentation, parcours, compétences, objectifs 2026, expériences professionnelles (dont Liriscom) et formulaire de contact.
+- [Portfolio Interactif & Dashboard Admin](https://pierre-untersinger.site/projects/portfolio): ce site lui-même — React 19, FastAPI, SQLite, panel d'administration et télémétrie RGPD-friendly.
+- [Merci-App](https://pierre-untersinger.site/projects/merci-app): hub multimédia unifié donnant accès à plusieurs sources (musique, films, séries, anime, YouTube).
+- [Auris-MP3](https://pierre-untersinger.site/projects/auris-mp3): baladeur MP3 IoT / Maker explorant le hardware et le firmware embarqué.
+- [Voltaire-Menu](https://pierre-untersinger.site/projects/voltaire): userscript open source assistant Projet Voltaire (auto-complétion, mode discret, overlay en direct).
+
+## Contact
+
+Formulaire de contact sur la page d'accueil (https://pierre-untersinger.site/#contact). Pas d'API publique de contact directe en dehors de ce formulaire.
