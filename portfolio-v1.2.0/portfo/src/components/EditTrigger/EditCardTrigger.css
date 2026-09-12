@@ -114,7 +114,6 @@
 
 /* Effet de surbrillance sur les cartes éditables en mode édition */
 body.edit-mode-active .who-card,
-body.edit-mode-active .obj-card,
 body.edit-mode-active .exp-formation-card,
 body.edit-mode-active .timeline-card,
 body.edit-mode-active .project-card,
@@ -122,6 +121,16 @@ body.edit-mode-active .ep-card,
 body.edit-mode-active .contact-card,
 body.edit-mode-active .hero-content {
     position: relative;
+    transition: outline 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* .obj-card exige position: absolute (voir Objectives.css) pour le placement
+   en carrousel 3D — top/left en % + transform. La règle générique ci-dessus
+   le repassait en "relative" dès le mode édition activé (spécificité plus
+   forte que la règle de base) : chaque carte retombait alors dans le flux
+   normal du document, s'empilant verticalement à la place de se superposer
+   au centre. Même effet de surbrillance ici, sans toucher au position. */
+body.edit-mode-active .obj-card {
     transition: outline 0.2s ease, box-shadow 0.2s ease;
 }
 
