@@ -62,6 +62,18 @@ img {
     height: auto;
 }
 
+.App-header-img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    object-fit: contain;
+    transition: filter 0.3s ease;
+}
+
+[data-theme="light"] .App-header-img {
+    filter: brightness(0);
+}
+
 /* Background Wallpaper */
 .app-bg-wallpaper {
     position: fixed;

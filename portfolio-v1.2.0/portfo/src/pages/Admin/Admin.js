@@ -5,6 +5,8 @@ import AdminUptime from '../../components/AdminUptime/AdminUptime';
 import AdminInfoCards from '../../components/AdminInfoCards/AdminInfoCards';
 import AdminLogs from '../../components/AdminLogs/AdminLogs';
 import AdminAnalytics from '../../components/AdminAnalytics/AdminAnalytics';
+import AdminContents from '../../components/AdminContents/AdminContents';
+import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import PixelPetGame from '../../features/PixelGame/PixelPetGame';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 import { loginAdmin, logoutAdmin, verifyAdminAuth } from '../../services/api';
@@ -34,11 +36,11 @@ export default function Admin({ theme, onToggleTheme }) {
 
     useEffect(() => {
         async function checkAuth() {
-            const hasToken = Boolean(localStorage.getItem('admin_token'));
-            if (hasToken) {
-                const isValid = await verifyAdminAuth();
-                setIsAuthenticated(isValid);
-            }
+            // La session vit dans un cookie HttpOnly : on ne peut pas la lire en
+            // JS, on interroge donc le serveur. verifyAdminAuth() appelle
+            // /api/admin/me, qui répond via le cookie joint automatiquement.
+            const isValid = await verifyAdminAuth();
+            setIsAuthenticated(isValid);
             setLoading(false);
         }
         checkAuth();
@@ -58,11 +60,11 @@ export default function Admin({ theme, onToggleTheme }) {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         try {
             sessionStorage.removeItem('admin_logs_viewed_session');
         } catch (_) {}
-        logoutAdmin();
+        await logoutAdmin();
         setIsAuthenticated(false);
     };
 
@@ -149,8 +151,6 @@ export default function Admin({ theme, onToggleTheme }) {
                 onOpenMenu={() => setIsMenuOpen(true)}
                 theme={theme}
                 onToggleTheme={onToggleTheme}
-                title="PanelAdmin"
-                subtitle="My role: Admin"
                 customLinks={adminNavLinks}
                 activeId={activeTab}
                 onItemClick={(id) => {
@@ -161,55 +161,35 @@ export default function Admin({ theme, onToggleTheme }) {
                     }
                     setActiveTab(id);
                 }}
+            />
+
+            <MobileMenu
+                open={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                customLinks={adminNavLinks}
+                activeId={activeTab}
+                onItemClick={(id) => {
+                    if (id === 'logs') {
+                        try {
+                            sessionStorage.setItem('admin_logs_viewed_session', 'true');
+                        } catch (_) {}
+                    }
+                    setActiveTab(id);
+                    setIsMenuOpen(false);
+                }}
                 footerNode={
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <Link to="/" style={{ textDecoration: 'none' }}>
-                            <button
-                                type="button"
-                                style={{
-                                    width: '100%',
-                                    padding: '10px 12px',
-                                    fontSize: '15px',
-                                    textAlign: 'left',
-                                    background: 'transparent',
-                                    color: 'var(--text-muted)',
-                                    border: '1px solid transparent',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.color = 'var(--text-strong)';
-                                    e.target.style.backgroundColor = 'var(--surface-hover)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.color = 'var(--text-muted)';
-                                    e.target.style.backgroundColor = 'transparent';
-                                }}
-                            >
+                    <div className="mobile-menu-footer-actions">
+                        <Link to="/" style={{ textDecoration: 'none' }} onClick={() => setIsMenuOpen(false)}>
+                            <button type="button" className="admin-menu-action-btn">
                                 Voir le portfolio
                             </button>
                         </Link>
                         <button
                             type="button"
-                            onClick={handleLogout}
-                            style={{
-                                width: '100%',
-                                padding: '10px 12px',
-                                fontSize: '15px',
-                                textAlign: 'left',
-                                background: 'transparent',
-                                color: '#ef4444',
-                                border: '1px solid transparent',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                            }}
-                            onMouseEnter={(e) => {
-                                e.target.style.backgroundColor = 'rgba(239, 68, 68, 0.12)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.target.style.backgroundColor = 'transparent';
+                            className="admin-menu-action-btn admin-menu-action-btn--logout"
+                            onClick={() => {
+                                setIsMenuOpen(false);
+                                handleLogout();
                             }}
                         >
                             Déconnexion
@@ -242,14 +222,14 @@ export default function Admin({ theme, onToggleTheme }) {
                 )}
                 {activeTab === 'contents' && (
                     <section className="admin-page-view admin-page-contents">
-                        {/* Page Contents vide */}
+                        <AdminContents theme={theme} onBack={() => setActiveTab('main')} />
                     </section>
                 )}
                 {activeTab === 'analytics' && (
                     <section className="admin-page-view admin-page-analytics">
                         {/* Le thème est transmis : les graphiques sont rendus côté
                             serveur et ne peuvent pas s'y adapter d'eux-mêmes. */}
-                        <AdminAnalytics theme={theme} />
+                        <AdminAnalytics theme={theme} onBack={() => setActiveTab('main')} />
                     </section>
                 )}
                 {activeTab === 'logs' && (

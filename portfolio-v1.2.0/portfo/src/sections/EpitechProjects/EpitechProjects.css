@@ -9,6 +9,15 @@
     margin-bottom: 56px;
 }
 
+.section-head-with-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
 #epitech-projects h2 {
     margin: 0;
     color: var(--text-strong);

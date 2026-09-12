@@ -1,238 +1,1302 @@
-/*
- * Écran Analytics du panneau d'administration.
- *
- * Les couleurs viennent toutes des variables de thème définies dans index.css :
- * les graphiques, eux, sont rendus côté serveur dans la palette correspondante
- * et demandés à nouveau quand le thème change.
- */
+/* ==============================================================================
+   ADMIN ANALYTICS (Organisation par sections & alignement parfait)
+   ============================================================================== */
 
-.analytics-view {
+.admin-analytics-view {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 4px 2px 40px;
-    overflow-y: auto;
-    height: 100%;
+    gap: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
 }
 
-/* ---------------- Bandeau supérieur ---------------- */
+/* --------------------------------------------------------------------------
+   1. Bandeau supérieur FIXE (Titre, bouton retour, indicateur live & filtres)
+   -------------------------------------------------------------------------- */
 
-.analytics-toolbar {
+.admin-analytics-toolbar-card {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 12px 18px;
+    box-shadow: var(--header-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--text);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 30;
+    transition: var(--transition-theme);
+}
+
+.admin-analytics-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 20px;
     flex-wrap: wrap;
-}
-
-.analytics-title {
-    margin: 0 0 4px;
-    font-size: 22px;
-    font-weight: 650;
-    letter-spacing: -0.02em;
-    color: var(--text-strong);
-}
-
-.analytics-subtitle {
-    margin: 0;
-    max-width: 64ch;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--text-muted);
-}
-
-.analytics-alert {
-    padding: 12px 16px;
-    border-radius: 8px;
-    border: 1px solid var(--error);
-    background: color-mix(in srgb, var(--error) 10%, transparent);
-    color: var(--text-strong);
-    font-size: 14px;
-}
-
-/* ---------------- Chiffres-clés ---------------- */
-
-.analytics-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
 }
 
-.analytics-stat {
-    padding: 16px 18px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-}
-
-.analytics-stat-value {
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    color: var(--text-strong);
-    font-variant-numeric: tabular-nums;
-}
-
-.analytics-stat-label {
-    margin-top: 6px;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-.analytics-stat-hint {
-    margin-top: 3px;
-    font-size: 11.5px;
-    color: var(--text-faint);
-}
-
-/* ---------------- Grille de figures ---------------- */
-
-.analytics-grid {
-    display: grid;
-    /* Deux colonnes au maximum : à trois, une figure de 550 px se retrouvait
-       réduite de moitié et ses libellés d'axe devenaient illisibles. */
-    grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
-    gap: 14px;
-    align-items: start;
-}
-
-.analytics-card {
+.admin-analytics-title-box {
     display: flex;
-    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
-    padding: 18px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    flex: 1;
+    min-width: 260px;
+}
+
+.admin-analytics-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     background: var(--surface);
-}
-
-/* Le trafic quotidien et la carte horaire ont besoin de toute la largeur :
-   comprimés sur une demi-colonne, leurs libellés d'axe se chevauchent. */
-.analytics-card--wide {
-    grid-column: 1 / -1;
-}
-
-.analytics-card-head h3 {
-    margin: 0 0 3px;
-    font-size: 15.5px;
-    font-weight: 600;
-    color: var(--text-strong);
-}
-
-.analytics-card-head p {
-    margin: 0;
-    font-size: 12.5px;
-    line-height: 1.45;
-    color: var(--text-muted);
-}
-
-/* ---------------- Le graphique lui-même ---------------- */
-
-.analytics-figure {
-    min-height: 120px;
-}
-
-/*
- * Surtout pas de conteneur flex ici.
- *
- * Une image en élément flex avec `height: auto` voit sa taille intrinsèque
- * ignorée et se réduit à quelques pixels : les graphiques apparaissaient comme
- * de simples traits. En bloc, l'image reprend le ratio de son viewBox.
- */
-.analytics-figure img {
-    display: block;
-    width: 100%;
-    height: auto;
-    margin: 0 auto;
-}
-
-.analytics-figure-loading,
-.analytics-figure-error {
-    margin: 0;
-    padding: 28px 12px;
-    font-size: 13px;
-    text-align: center;
-    color: var(--text-faint);
-}
-
-.analytics-figure-error {
-    color: var(--error);
-}
-
-/* ---------------- Tableau de valeurs ---------------- */
-
-.analytics-table-toggle {
-    align-self: flex-start;
-    padding: 5px 10px;
-    font-size: 12px;
-    font-family: inherit;
-    color: var(--text-muted);
-    background: transparent;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    color: var(--text-strong);
+    border-radius: 9px;
     cursor: pointer;
-    transition: color 0.15s ease, border-color 0.15s ease;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-.analytics-table-toggle:hover {
+.admin-analytics-back-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--accent, #10b981);
+}
+
+.admin-analytics-back-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.admin-analytics-back-btn:hover svg {
+    transform: translateX(-2px);
+}
+
+.admin-analytics-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.admin-analytics-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-analytics-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    user-select: none;
+    letter-spacing: 0.01em;
+}
+
+.admin-analytics-badge--live {
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="light"] .admin-analytics-badge--live {
+    color: #059669;
+    border-color: rgba(5, 150, 105, 0.3);
+    background: rgba(5, 150, 105, 0.08);
+}
+
+.admin-analytics-badge__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+    animation: adminPulseDot 2s infinite ease-in-out;
+}
+
+[data-theme="light"] .admin-analytics-badge__dot {
+    background: #059669;
+    box-shadow: 0 0 6px #059669;
+}
+
+.admin-analytics-subtitle {
+    font-size: 0.81rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.admin-analytics-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.admin-analytics-refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.admin-analytics-refresh-btn:hover:not(:disabled) {
+    background: var(--surface-hover);
     color: var(--text-strong);
     border-color: var(--border-strong);
 }
 
-.analytics-table-toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+.admin-analytics-refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-.analytics-table {
+.admin-analytics-spin {
+    animation: adminSpin 1s linear infinite;
+}
+
+.admin-analytics-filter-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.admin-analytics-filter-toolbar::-webkit-scrollbar {
+    display: none;
+}
+
+.admin-analytics-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    min-width: max-content;
+    padding: 2px 0;
+}
+
+.admin-analytics-filter-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 13px;
+    border-radius: 9px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.admin-analytics-filter-btn:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+}
+
+.admin-analytics-filter-btn.is-active {
+    background: var(--accent, #10b981);
+    border-color: var(--accent, #10b981);
+    color: #ffffff;
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.admin-analytics-filter-badge {
+    font-size: 0.72rem;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    color: inherit;
+    font-weight: 700;
+}
+
+.admin-analytics-filter-btn.is-active .admin-analytics-filter-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.admin-analytics-alert {
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+[data-theme="light"] .admin-analytics-alert {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
+    color: #b91c1c;
+}
+
+/* --------------------------------------------------------------------------
+   2. Conteneur de défilement dédié et fluide
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-scroll-container {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-sizing: border-box;
+    padding-right: 6px;
+    padding-bottom: 70px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+.admin-analytics-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-analytics-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-analytics-scroll-container::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 6px;
+}
+
+.admin-analytics-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent, #10b981);
+}
+
+/* --------------------------------------------------------------------------
+   3. Grille de Cartes KPI (Strictement identique à AdminInfoCards)
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   4. Sections Thématiques & Grilles de Graphiques
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.admin-analytics-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 4px;
+}
+
+.admin-analytics-section-title-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: var(--text-strong);
+}
+
+.admin-analytics-section-title {
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-analytics-section-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    letter-spacing: 0.02em;
+}
+
+.admin-analytics-section-subtitle {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.admin-analytics-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.admin-analytics-card {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px 18px;
+    box-shadow: var(--header-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    transition: var(--transition-theme), border-color 0.25s ease, box-shadow 0.25s ease;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.admin-analytics-card:hover {
+    border-color: var(--border-strong);
+}
+
+.admin-analytics-card--wide {
+    grid-column: 1 / -1;
+}
+
+.admin-analytics-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.admin-analytics-card-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 180px;
+}
+
+.admin-analytics-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    color: var(--text-strong);
+}
+
+.admin-analytics-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-analytics-card-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    letter-spacing: 0.02em;
+}
+
+.admin-analytics-card-badge--count {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .admin-analytics-card-badge--count {
+    color: #059669;
+    background: rgba(5, 150, 105, 0.08);
+    border-color: rgba(5, 150, 105, 0.25);
+}
+
+.admin-analytics-card-legend {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.admin-analytics-table-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.admin-analytics-table-toggle-btn:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+}
+
+.admin-analytics-table-toggle-btn.is-active {
+    color: var(--accent, #10b981);
+    border-color: var(--accent, #10b981);
+    background: var(--surface-hover);
+}
+
+.admin-analytics-table-toggle-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.admin-analytics-table-toggle-btn.is-active svg:last-child {
+    transform: rotate(180deg);
+}
+
+/* Conteneur visuel de la figure SVG */
+.admin-analytics-figure-container {
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px;
+    min-height: 140px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background-color 0.25s ease;
+}
+
+[data-theme="light"] .admin-analytics-figure-container {
+    background: rgba(0, 0, 0, 0.025);
+}
+
+.admin-analytics-svg-box {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-analytics-svg-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 440px;
+    object-fit: contain;
+    margin: 0 auto;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.admin-analytics-figure-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 30px 15px;
+    color: var(--text-faint);
+    font-size: 0.82rem;
+    font-style: italic;
+    text-align: center;
+}
+
+.admin-analytics-spinner {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent, #10b981);
+    border-radius: 50%;
+    animation: adminSpin 0.8s linear infinite;
+}
+
+.admin-analytics-figure-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ef4444;
+    font-size: 0.82rem;
+    padding: 24px 16px;
+    text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   5. Tableaux de valeurs dépliables (Design soigné & moderne)
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-card-table-collapse {
+    width: 100%;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 2px;
+    animation: adminFadeIn 0.25s ease;
+    flex-shrink: 0;
+}
+
+.admin-analytics-card-table-collapse.is-always-open {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+}
+
+.admin-analytics-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-analytics-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 0.78rem;
+    font-family: inherit;
 }
 
-.analytics-table th,
-.analytics-table td {
-    padding: 7px 10px;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-}
-
-.analytics-table th {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
+.admin-analytics-table th {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.06em;
     color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
 }
 
-.analytics-table td {
+.admin-analytics-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
     color: var(--text);
+    vertical-align: middle;
 }
 
-.analytics-table tr:last-child td {
+.admin-analytics-table tr:last-child td {
     border-bottom: none;
 }
 
-.analytics-table-num {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+.admin-analytics-table tr:hover td {
+    background: var(--surface-hover);
 }
 
-@media (max-width: 720px) {
-    .analytics-grid {
+.admin-analytics-table-label-cell {
+    width: 60%;
+}
+
+.admin-analytics-table-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-analytics-table-event-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    letter-spacing: 0.02em;
+}
+
+.admin-analytics-table-text {
+    font-weight: 600;
+    color: var(--text-strong);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 380px;
+}
+
+.admin-analytics-table-meter {
+    width: 100%;
+    max-width: 220px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.admin-analytics-table-meter-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #38bdf8 0%, var(--accent, #10b981) 100%);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.admin-analytics-table-num {
+    text-align: right;
+    width: 20%;
+}
+
+.admin-analytics-table-badge {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-strong);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.admin-analytics-table-part {
+    text-align: right;
+    width: 20%;
+}
+
+.admin-analytics-table-percent {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.admin-analytics-table-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   6. Section des Événements & État Vide
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-card--events {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.admin-analytics-events-empty {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 14px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    margin-top: 4px;
+}
+
+.admin-analytics-empty-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--surface-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.admin-analytics-empty-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.admin-analytics-empty-title {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--text-strong);
+    margin: 0;
+}
+
+.admin-analytics-empty-hint {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Conteneur d'actions de l'en-tête de carte (bouton tableau + bouton agrandir) */
+.admin-analytics-card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.admin-analytics-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.admin-analytics-expand-btn:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-analytics-expand-btn:active {
+    transform: translateY(0);
+}
+
+/* Conteneur cliquable pour agrandissement */
+.admin-analytics-figure-container.is-clickable {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.admin-analytics-figure-container.is-clickable:hover {
+    border-color: rgba(56, 189, 248, 0.45);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18), 0 0 15px rgba(56, 189, 248, 0.1);
+}
+
+.admin-analytics-figure-container.is-clickable:focus-visible {
+    outline: 2px solid var(--accent, #38bdf8);
+    outline-offset: 2px;
+}
+
+/* Badge indicatif "Agrandir" dans le coin du graphique */
+.admin-analytics-zoom-hint {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #f8fafc;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(3px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="light"] .admin-analytics-zoom-hint {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.admin-analytics-figure-container.is-clickable:hover .admin-analytics-zoom-hint {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   7. Modal Popup plein écran pour graphiques (Mobile, Tablette & Desktop)
+   -------------------------------------------------------------------------- */
+
+.admin-analytics-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: rgba(3, 7, 18, 0.82);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+    animation: adminModalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .admin-analytics-modal-backdrop {
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.admin-analytics-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-strong);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    animation: adminModalZoomIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+}
+
+[data-theme="light"] .admin-analytics-modal-card {
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.admin-analytics-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+
+.admin-analytics-modal-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-analytics-modal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-analytics-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-analytics-modal-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--accent, #38bdf8);
+}
+
+.admin-analytics-modal-legend {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.45;
+}
+
+.admin-analytics-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.admin-analytics-modal-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.admin-analytics-modal-close-btn:hover {
+    color: var(--text-strong);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    transform: scale(1.05);
+}
+
+.admin-analytics-modal-close-btn:active {
+    transform: scale(0.96);
+}
+
+.admin-analytics-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.admin-analytics-modal-svg-wrapper {
+    width: 100%;
+    min-height: 240px;
+    max-height: 65vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+[data-theme="light"] .admin-analytics-modal-svg-wrapper {
+    background: rgba(0, 0, 0, 0.025);
+}
+
+.admin-analytics-modal-svg-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 60vh;
+    object-fit: contain;
+    margin: 0 auto;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.18));
+}
+
+.admin-analytics-modal-table-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    animation: adminFadeIn 0.25s ease;
+}
+
+.admin-analytics-modal-table-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+}
+
+.admin-analytics-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-faint);
+    font-size: 0.74rem;
+    font-style: italic;
+    flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Animations
+   -------------------------------------------------------------------------- */
+
+@keyframes adminPulseDot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.45;
+        transform: scale(0.85);
+    }
+}
+
+@keyframes adminSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes adminFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes adminModalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes adminModalZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Design
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+    .admin-analytics-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .admin-analytics-charts-grid {
         grid-template-columns: 1fr;
     }
 
-    .analytics-toolbar {
-        flex-direction: column;
-        align-items: stretch;
+    .admin-analytics-card {
+        border-radius: 16px;
     }
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .analytics-table-toggle {
-        transition: none;
+@media (max-width: 1024px) {
+    .admin-analytics-zoom-hint {
+        opacity: 0.85;
+        transform: translateY(0);
     }
 }
+
+@media (max-width: 768px) {
+    .admin-analytics-modal-backdrop {
+        padding: 10px;
+        align-items: flex-end;
+    }
+
+    .admin-analytics-modal-card {
+        max-height: 94vh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .admin-analytics-modal-header {
+        padding: 14px 16px;
+    }
+
+    .admin-analytics-modal-title {
+        font-size: 1.1rem;
+    }
+
+    .admin-analytics-modal-legend {
+        font-size: 0.78rem;
+    }
+
+    .admin-analytics-modal-body {
+        padding: 14px 16px;
+        gap: 14px;
+    }
+
+    .admin-analytics-modal-svg-wrapper {
+        min-height: 200px;
+        max-height: 52vh;
+        padding: 8px;
+    }
+
+    .admin-analytics-modal-svg-img {
+        max-height: 50vh;
+    }
+}
+
+@media (max-width: 680px) {
+    .admin-analytics-toolbar-card {
+        padding: 10px 14px;
+        border-radius: 16px;
+        gap: 8px;
+    }
+
+    .admin-analytics-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .admin-analytics-title-box {
+        min-width: 0;
+        gap: 10px;
+    }
+
+    .admin-analytics-title {
+        font-size: 1.15rem;
+    }
+
+    .admin-analytics-subtitle {
+        font-size: 0.74rem;
+    }
+
+    .admin-analytics-controls {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .admin-analytics-kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .admin-analytics-card {
+        padding: 12px 14px;
+        border-radius: 14px;
+    }
+
+    .admin-analytics-card-title {
+        font-size: 0.98rem;
+    }
+
+    .admin-analytics-card-legend {
+        font-size: 0.74rem;
+    }
+
+    .admin-analytics-table-toggle-btn {
+        padding: 4px 8px;
+        font-size: 0.72rem;
+    }
+
+    .admin-analytics-figure-container {
+        min-height: 120px;
+        padding: 6px;
+    }
+
+    .admin-analytics-table th,
+    .admin-analytics-table td {
+        padding: 5px 8px;
+        font-size: 0.74rem;
+    }
+
+    .admin-analytics-table-text {
+        max-width: 150px;
+    }
+
+    .admin-analytics-scroll-container {
+        padding-bottom: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-analytics-title {
+        font-size: 1.05rem;
+    }
+
+    .admin-analytics-filter-btn {
+        padding: 5px 10px;
+        font-size: 0.78rem;
+    }
+
+    .admin-analytics-table-text {
+        max-width: 120px;
+    }
+
+    .admin-analytics-table-event-tag {
+        font-size: 0.62rem;
+        padding: 1px 4px;
+    }
+
+    .admin-analytics-modal-card {
+        max-height: 96vh;
+    }
+
+    .admin-analytics-modal-header {
+        padding: 12px 14px;
+    }
+
+    .admin-analytics-modal-title {
+        font-size: 1rem;
+    }
+
+    .admin-analytics-modal-body {
+        padding: 12px 14px;
+    }
+
+    .admin-analytics-modal-footer {
+        padding: 8px 14px;
+        font-size: 0.7rem;
+    }
+}
+

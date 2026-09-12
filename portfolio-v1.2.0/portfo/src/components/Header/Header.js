@@ -24,6 +24,54 @@ function Header({
     const defaultLinks = getNavLinks(lang);
     const links = customLinks || defaultLinks;
     const [activeSection, setActiveSection] = useState('home');
+    const [isShrunk, setIsShrunk] = useState(false);
+
+    // Réinitialise la taille normale lors du changement d'onglet ou de page
+    useEffect(() => {
+        setIsShrunk(false);
+    }, [activeId, title]);
+
+    useEffect(() => {
+        let lastScrollY = 0;
+        let ticking = false;
+
+        const handleScrollCapture = (e) => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const target = e.target;
+                    const currentScrollY = (target && target !== document && target !== window && typeof target.scrollTop === 'number')
+                        ? target.scrollTop
+                        : (window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0);
+
+                    const diff = currentScrollY - lastScrollY;
+
+                    // Si on est tout en haut, le menu reprend toujours sa taille normale
+                    if (currentScrollY <= 15) {
+                        setIsShrunk(false);
+                    } else if (diff > 6 && currentScrollY > 30) {
+                        // Défilement vers le bas : rétrécir le menu supérieur
+                        setIsShrunk(true);
+                    } else if (diff < -6) {
+                        // Défilement vers le haut : agrandir / restaurer le menu supérieur
+                        setIsShrunk(false);
+                    }
+
+                    lastScrollY = currentScrollY;
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+
+        // Capture tous les événements de scroll (window et conteneurs internes du dashboard)
+        document.addEventListener('scroll', handleScrollCapture, { capture: true, passive: true });
+        window.addEventListener('scroll', handleScrollCapture, { passive: true });
+
+        return () => {
+            document.removeEventListener('scroll', handleScrollCapture, { capture: true });
+            window.removeEventListener('scroll', handleScrollCapture);
+        };
+    }, []);
 
     useEffect(() => {
         if (customLinks) return;
@@ -85,7 +133,7 @@ function Header({
 
     return (
         <header className="App-header">
-            <div className={`App-header-container ${isMenuOpen ? 'clicked' : ''}`}>
+            <div className={`App-header-container ${isMenuOpen ? 'clicked' : ''} ${isShrunk ? 'is-shrunk' : ''}`}>
                 <div className="App-header-top">
                     <div>
                         <h1>{title}</h1>

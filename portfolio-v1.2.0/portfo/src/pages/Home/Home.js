@@ -3,6 +3,9 @@ import Header from '../../components/Header/Header';
 import MobileMenu from '../../components/MobileMenu/MobileMenu';
 import Footer from '../../components/Footer/Footer';
 import ScrollProgressBar from '../../components/ScrollProgressBar/ScrollProgressBar';
+import EditModeBanner from '../../components/EditModeBanner/EditModeBanner';
+import EditBottomDrawer from '../../components/EditDrawer/EditBottomDrawer';
+import { useEditableContent } from '../../context/EditableContentContext';
 import Hero from '../../sections/Hero/Hero';
 import WhoIAm from '../../sections/WhoIAm/WhoIAm';
 import Objectives from '../../sections/Objectives/Objectives';
@@ -13,8 +16,21 @@ import Contact from '../../sections/Contact/Contact';
 import useBodyScrollLock from '../../hooks/useBodyScrollLock';
 
 function Home({ theme, onToggleTheme }) {
+    const { isEditMode } = useEditableContent();
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     useBodyScrollLock(isMenuOpen);
+
+    useEffect(() => {
+        if (isEditMode) {
+            document.body.classList.add('edit-mode-active');
+        } else {
+            document.body.classList.remove('edit-mode-active');
+        }
+        return () => {
+            document.body.classList.remove('edit-mode-active');
+        };
+    }, [isEditMode]);
 
     useEffect(() => {
         if (!window.location.hash || window.location.hash === '#home') {
@@ -24,6 +40,8 @@ function Home({ theme, onToggleTheme }) {
 
     return (
         <>
+            {isEditMode && <EditModeBanner />}
+            <EditBottomDrawer />
             <ScrollProgressBar />
             <Header
                 isMenuOpen={isMenuOpen}
@@ -48,3 +66,4 @@ function Home({ theme, onToggleTheme }) {
 }
 
 export default Home;
+

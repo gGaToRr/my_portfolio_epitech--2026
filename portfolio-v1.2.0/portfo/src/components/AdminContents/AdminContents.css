@@ -1,0 +1,515 @@
+/* ==============================================================================
+   Admin Contents - Vue d'Organisation des Contenus du Portfolio
+   Design épuré et cohérent avec la console Logs & Analytics
+   ============================================================================== */
+
+.admin-contents-view {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-sizing: border-box;
+    /* overflow: visible laissait ce conteneur grandir à la hauteur de son
+       contenu (7 sections) au lieu de rester borné à l'espace disponible :
+       .admin-contents-scroll-area plus bas n'avait alors jamais rien à
+       scroller lui-même, et tout finissait rogné sans barre de défilement par
+       le overflow:hidden de .admin-main-canvas, plus haut dans l'arbre.
+       Même correctif que .admin-analytics-view (AdminAnalytics.css). */
+    overflow: hidden;
+    margin: 0;
+    position: relative;
+}
+
+/* ----------------------------------------------------
+   1. BANDEAU DE CONTRÔLE SUPÉRIEUR (Toolbar Card)
+   ---------------------------------------------------- */
+.admin-contents-toolbar-card {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px 18px;
+    box-shadow: var(--header-shadow);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: var(--text);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 50;
+    overflow: visible;
+}
+
+.admin-contents-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 2px;
+    flex-shrink: 0;
+}
+
+.admin-contents-title-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-contents-back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-strong);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.admin-contents-back-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--accent);
+}
+
+.admin-contents-title {
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-contents-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+}
+
+.admin-contents-subtitle code {
+    background: var(--surface);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.admin-contents-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Bouton mode édition sobre et élégant */
+.admin-contents-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 9px;
+    background: #ef4444;
+    color: #ffffff;
+    border: 1px solid #ef4444;
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+
+.admin-contents-edit-btn:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+}
+
+.admin-contents-edit-btn:active {
+    transform: translateY(0);
+}
+
+/* ----------------------------------------------------
+   2. BARRE D'OUTILS ET FILTRES
+   ---------------------------------------------------- */
+.admin-contents-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 20;
+}
+
+.admin-contents-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.admin-contents-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.admin-contents-filter-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--accent);
+}
+
+.admin-contents-filter-btn.is-active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.contents-tag--all {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+}
+
+/* ----------------------------------------------------
+   3. ZONE DE SCROLL DES SECTIONS ORGANISÉES
+   ---------------------------------------------------- */
+.admin-contents-scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding-right: 6px;
+    padding-bottom: 28px;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+}
+
+.admin-section-block {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: var(--header-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.admin-section-block:hover {
+    border-color: var(--border-strong);
+}
+
+.admin-section-block__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-section-block__info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-section-block__num {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.admin-section-block__title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+}
+
+.admin-section-block__anchor {
+    font-size: 0.78rem;
+    background: var(--surface);
+    color: var(--text-muted);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.admin-section-block__badge {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    background: var(--surface-hover);
+    padding: 2px 8px;
+    border-radius: 5px;
+}
+
+.admin-section-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 7px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.admin-section-edit-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.35);
+}
+
+.admin-section-block__desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ----------------------------------------------------
+   4. GRILLE DE CARTES PAR SECTION
+   ---------------------------------------------------- */
+.admin-section-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.admin-content-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.admin-content-card:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-hover);
+    transform: translateY(-2px);
+}
+
+.admin-content-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.admin-content-card__type {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+}
+
+.admin-content-card__status {
+    font-size: 0.72rem;
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.admin-content-card__title {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin: 0;
+    line-height: 1.35;
+}
+
+.admin-content-card__items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 11px;
+}
+
+.admin-content-card__item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+}
+
+.item-label {
+    font-weight: 700;
+    color: var(--text-strong);
+    font-size: 0.76rem;
+}
+
+.item-val {
+    color: var(--text-muted);
+}
+
+.admin-content-card__tags {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: 2px;
+}
+
+.content-tag {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.admin-contents-empty {
+    padding: 36px 20px;
+    text-align: center;
+    background: var(--surface-strong);
+    border: 1px dashed var(--border-strong);
+    border-radius: 14px;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-contents-reset-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--text-strong);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.admin-contents-reset-btn:hover {
+    background: var(--surface-hover);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ----------------------------------------------------
+   RESPONSIVE
+   ---------------------------------------------------- */
+@media (max-width: 768px) {
+    .admin-contents-toolbar-card {
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .admin-contents-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .admin-contents-actions {
+        width: 100%;
+    }
+
+    .admin-contents-edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .admin-contents-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-contents-filter-group {
+        width: 100%;
+    }
+
+    .admin-section-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-section-block {
+        padding: 14px;
+    }
+
+    .admin-section-block__head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .admin-section-edit-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

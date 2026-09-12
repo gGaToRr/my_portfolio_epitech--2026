@@ -1,31 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaGithub, FaLinkedin, FaYoutube } from 'react-icons/fa';
 import { useLanguage } from '../../context/LanguageContext';
-import translations from '../../data/translations';
+import { useEditableContent } from '../../context/EditableContentContext';
+import { EditCardTrigger } from '../../components/EditTrigger/EditCardTrigger';
+import MarkdownView from '../../components/MarkdownView/MarkdownView';
 import { sendContactMessage } from '../../utils/sendContactMessage';
 import ScrollReveal from '../../components/ScrollReveal/ScrollReveal';
+import { renderIcon } from '../../utils/iconRegistry';
+import { isSafeUrl } from '../../utils/urlSafety';
 import './Contact.css';
-
-function EpitechLogo({ size = 28 }) {
-    return (
-        <svg
-            width={size}
-            height={size}
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="contact-social-svg"
-            aria-hidden="true"
-        >
-            <rect width="100" height="100" rx="20" fill="currentColor" fillOpacity="0.15" />
-            <path
-                d="M26 26H76V38H40V46H70V58H40V66H76V78H26V26Z"
-                fill="currentColor"
-            />
-        </svg>
-    );
-}
 
 function getSteps(t) {
     return [
@@ -66,7 +49,6 @@ function getSteps(t) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+()\d\s.-]{6,32}$/;
-// Strip control chars (sauf \n \r \t) pour bloquer payloads d'injection d'headers
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHARS_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
@@ -89,7 +71,11 @@ function isStepValid(step, value) {
 
 function Contact() {
     const { lang } = useLanguage();
+    const { translations, cardStyles, socials, openEditDrawer, getFieldColor, isEditMode } = useEditableContent();
+
     const t = translations[lang] || translations.en;
+    const tFr = translations.fr?.contact || {};
+    const tEn = translations.en?.contact || {};
     const steps = getSteps(t);
 
     const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
@@ -156,6 +142,56 @@ function Contact() {
 
     const progress = ((stepIndex + (submitted ? 1 : 0)) / steps.length) * 100;
 
+    // 1. Édition Formulaire
+    const handleEditFormCard = () => {
+        openEditDrawer({
+            cardId: 'contact-form',
+            sectionId: 'contact',
+            sectionLabel: 'Section 07 • Formulaire de Contact',
+            title: 'Édition : En-têtes du Formulaire',
+            type: 'translation',
+            colors: cardStyles?.['contact-form'],
+            fields: [
+                { key: 'formTitle', label: 'Titre du formulaire', valueFr: tFr.formTitle, valueEn: tEn.formTitle, placeholder: 'Envoyez-moi un message', color: getFieldColor('contact-form', 'formTitle') },
+                { key: 'formSubtitle', label: 'Sous-titre (Markdown)', type: 'textarea', rows: 2, valueFr: tFr.formSubtitle, valueEn: tEn.formSubtitle, color: getFieldColor('contact-form', 'formSubtitle') },
+                { key: 'qName', label: 'Question Étape 1 (Nom)', valueFr: tFr.qName, valueEn: tEn.qName, color: getFieldColor('contact-form', 'qName') },
+                { key: 'qEmail', label: 'Question Étape 2 (Email)', valueFr: tFr.qEmail, valueEn: tEn.qEmail, color: getFieldColor('contact-form', 'qEmail') },
+                { key: 'qPhone', label: 'Question Étape 3 (Téléphone)', valueFr: tFr.qPhone, valueEn: tEn.qPhone, color: getFieldColor('contact-form', 'qPhone') },
+                { key: 'qMessage', label: 'Question Étape 4 (Message)', valueFr: tFr.qMessage, valueEn: tEn.qMessage, color: getFieldColor('contact-form', 'qMessage') },
+            ],
+        });
+    };
+
+    // 2. Édition Opportunités
+    const handleEditLookingCard = () => {
+        openEditDrawer({
+            cardId: 'contact-looking',
+            sectionId: 'contact',
+            sectionLabel: 'Section 07 • Carte Opportunités',
+            title: 'Édition : Opportunités Recherchées',
+            type: 'translation',
+            colors: cardStyles?.['contact-looking'],
+            fields: [
+                { key: 'lookingTitle', label: 'Titre', valueFr: tFr.lookingTitle, valueEn: tEn.lookingTitle, color: getFieldColor('contact-looking', 'lookingTitle') },
+                { key: 'lookingSubtitle', label: 'Sous-titre', valueFr: tFr.lookingSubtitle, valueEn: tEn.lookingSubtitle, color: getFieldColor('contact-looking', 'lookingSubtitle') },
+                { key: 'lookingBody', label: 'Description détaillée (Markdown)', type: 'textarea', rows: 4, valueFr: tFr.lookingBody, valueEn: tEn.lookingBody, color: getFieldColor('contact-looking', 'lookingBody') },
+            ],
+        });
+    };
+
+    // 3. Édition Réseaux & SVGs
+    const handleEditSocialsCard = () => {
+        openEditDrawer({
+            cardId: 'contact-socials',
+            sectionId: 'contact',
+            sectionLabel: 'Section 07 • Réseaux Sociaux & SVGs',
+            title: 'Édition : Réseaux & Icônes SVG (Ajout / Suppression)',
+            type: 'socials',
+            socialsData: socials,
+            colors: cardStyles?.['contact-socials'],
+        });
+    };
+
     return (
         <section id="contact">
             <ScrollReveal animation="fade-up">
@@ -163,15 +199,27 @@ function Contact() {
             </ScrollReveal>
 
             <div className="contact-grid">
+                {/* 1. Carte Formulaire */}
                 <ScrollReveal
                     animation="fade-up"
                     delay={0}
                     as="article"
                     className="contact-card contact-card--form"
+                    style={cardStyles?.['contact-form']?.accentColor ? { '--accent': cardStyles['contact-form'].accentColor } : {}}
                 >
-                    <h3 className="contact-card__title">{t.contact.formTitle}</h3>
-                    <p className="contact-card__subtitle">
-                        {t.contact.formSubtitle}
+                    {isEditMode && <EditCardTrigger onClick={handleEditFormCard} label="Éditer Formulaire" />}
+
+                    <h3
+                        className="contact-card__title"
+                        style={{ color: getFieldColor('contact-form', 'formTitle') || undefined }}
+                    >
+                        {t.contact.formTitle}
+                    </h3>
+                    <p
+                        className="contact-card__subtitle"
+                        style={{ color: getFieldColor('contact-form', 'formSubtitle') || undefined }}
+                    >
+                        <MarkdownView text={t.contact.formSubtitle} />
                     </p>
 
                     {!submitted && (
@@ -222,7 +270,10 @@ function Contact() {
                                 key={currentStep.name}
                                 className="contact-field contact-field--step"
                             >
-                                <span className="contact-field__question">
+                                <span
+                                    className="contact-field__question"
+                                    style={{ color: getFieldColor('contact-form', currentStep.name === 'name' ? 'qName' : currentStep.name === 'email' ? 'qEmail' : currentStep.name === 'phone' ? 'qPhone' : 'qMessage') || undefined }}
+                                >
                                     {currentStep.question}
                                 </span>
                                 {currentStep.type === 'textarea' ? (
@@ -288,73 +339,100 @@ function Contact() {
                     )}
                 </ScrollReveal>
 
+                {/* 2. Carte Opportunités */}
                 <ScrollReveal
                     animation="fade-up"
                     delay={120}
                     as="article"
                     className="contact-card"
+                    style={cardStyles?.['contact-looking']?.accentColor ? { '--accent': cardStyles['contact-looking'].accentColor } : {}}
                 >
-                    <h3 className="contact-card__title">{t.contact.lookingTitle}</h3>
-                    <p className="contact-card__subtitle">{t.contact.lookingSubtitle}</p>
-                    <p className="contact-card__body">
-                        {t.contact.lookingBody}
+                    {isEditMode && <EditCardTrigger onClick={handleEditLookingCard} label="Éditer Opportunités" />}
+
+                    <h3
+                        className="contact-card__title"
+                        style={{ color: getFieldColor('contact-looking', 'lookingTitle') || undefined }}
+                    >
+                        {t.contact.lookingTitle}
+                    </h3>
+                    <p
+                        className="contact-card__subtitle"
+                        style={{ color: getFieldColor('contact-looking', 'lookingSubtitle') || undefined }}
+                    >
+                        {t.contact.lookingSubtitle}
+                    </p>
+                    <p
+                        className="contact-card__body"
+                        style={{ color: getFieldColor('contact-looking', 'lookingBody') || undefined }}
+                    >
+                        <MarkdownView text={t.contact.lookingBody} />
                     </p>
                 </ScrollReveal>
 
+                {/* 3. Carte Réseaux Sociaux & SVGs */}
                 <ScrollReveal
                     animation="fade-up"
                     delay={240}
                     as="article"
                     className="contact-card contact-card--socials"
+                    style={cardStyles?.['contact-socials']?.accentColor ? { '--accent': cardStyles['contact-socials'].accentColor } : {}}
                 >
-                    <h3 className="contact-card__title">{t.contact.socialsTitle}</h3>
-                    <p className="contact-card__subtitle">{t.contact.socialsSubtitle}</p>
-                    <p className="contact-card__body">
-                        {t.contact.socialsBody}
+                    {isEditMode && <EditCardTrigger onClick={handleEditSocialsCard} label="Éditer Réseaux (SVG)" />}
+
+                    <h3
+                        className="contact-card__title"
+                        style={{ color: getFieldColor('contact-socials', 'socialsTitle') || undefined }}
+                    >
+                        {t.contact.socialsTitle}
+                    </h3>
+                    <p
+                        className="contact-card__subtitle"
+                        style={{ color: getFieldColor('contact-socials', 'socialsSubtitle') || undefined }}
+                    >
+                        {t.contact.socialsSubtitle}
+                    </p>
+                    <p
+                        className="contact-card__body"
+                        style={{ color: getFieldColor('contact-socials', 'socialsBody') || undefined }}
+                    >
+                        <MarkdownView text={t.contact.socialsBody} />
                     </p>
 
                     <div className="contact-social-icons-row">
-                        <a
-                            href="https://github.com/gGaToRr"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contact-icon-btn"
-                            aria-label="GitHub @gGaToRr"
-                            title="GitHub (@gGaToRr)"
-                        >
-                            <FaGithub />
-                        </a>
+                        {(socials || []).filter((soc) => isSafeUrl(soc.url)).map((soc) => {
+                            const isInternal = soc.url && soc.url.startsWith('/');
+                            const colorStyle = soc.color ? { color: soc.color, borderColor: soc.color } : {};
 
-                        <a
-                            href="https://www.linkedin.com/in/pierre-untersinger-406685253/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contact-icon-btn"
-                            aria-label="LinkedIn Pierre Untersinger"
-                            title="LinkedIn (Pierre Untersinger)"
-                        >
-                            <FaLinkedin />
-                        </a>
+                            if (isInternal) {
+                                return (
+                                    <Link
+                                        key={soc.id || soc.name}
+                                        to={soc.url}
+                                        className="contact-icon-btn"
+                                        aria-label={soc.name}
+                                        title={soc.title || soc.name}
+                                        style={colorStyle}
+                                    >
+                                        {renderIcon(soc.iconKey, { size: 20 })}
+                                    </Link>
+                                );
+                            }
 
-                        <Link
-                            to="/youtube"
-                            className="contact-icon-btn contact-icon-btn--yt"
-                            aria-label={t.notFound.ytBadge}
-                            title="YouTube"
-                        >
-                            <FaYoutube />
-                        </Link>
-
-                        <a
-                            href="https://www.epitech.eu/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="contact-icon-btn contact-icon-btn--epitech"
-                            aria-label="Epitech Marseille"
-                            title="Epitech Marseille"
-                        >
-                            <EpitechLogo size={26} />
-                        </a>
+                            return (
+                                <a
+                                    key={soc.id || soc.name}
+                                    href={soc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="contact-icon-btn"
+                                    aria-label={soc.name}
+                                    title={soc.title || soc.name}
+                                    style={colorStyle}
+                                >
+                                    {renderIcon(soc.iconKey, { size: 20 })}
+                                </a>
+                            );
+                        })}
                     </div>
                 </ScrollReveal>
             </div>

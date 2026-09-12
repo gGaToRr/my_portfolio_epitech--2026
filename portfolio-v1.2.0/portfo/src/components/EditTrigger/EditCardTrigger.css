@@ -1,0 +1,138 @@
+/* ==============================================================================
+   Boutons d'action et d'édition flottants sur les cartes en mode édition
+   ============================================================================== */
+
+.edit-card-actions-bar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+    animation: editTriggerPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-card-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.edit-card-trigger-btn:hover {
+    background: #dc2626;
+    transform: scale(1.06) translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.65);
+}
+
+.edit-card-trigger-btn:active {
+    transform: scale(0.96);
+}
+
+.edit-card-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(20, 24, 33, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-card-delete-btn:hover {
+    background: #ef4444;
+    color: #ffffff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+}
+
+.edit-trigger-svg {
+    flex-shrink: 0;
+}
+
+.edit-trigger-text {
+    line-height: 1;
+}
+
+/* Bouton d'ajout global par section */
+.btn-add-section-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px dashed #ef4444;
+    color: #fca5a5;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    margin: 12px auto;
+    width: fit-content;
+}
+
+.btn-add-section-item:hover {
+    background: #ef4444;
+    color: #ffffff;
+    border-style: solid;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes editTriggerPop {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Effet de surbrillance sur les cartes éditables en mode édition */
+body.edit-mode-active .who-card,
+body.edit-mode-active .obj-card,
+body.edit-mode-active .exp-formation-card,
+body.edit-mode-active .timeline-card,
+body.edit-mode-active .project-card,
+body.edit-mode-active .ep-card,
+body.edit-mode-active .contact-card,
+body.edit-mode-active .hero-content {
+    position: relative;
+    transition: outline 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.edit-mode-active .who-card:hover,
+body.edit-mode-active .obj-card:hover,
+body.edit-mode-active .exp-formation-card:hover,
+body.edit-mode-active .timeline-card:hover,
+body.edit-mode-active .project-card:hover,
+body.edit-mode-active .ep-card:hover,
+body.edit-mode-active .contact-card:hover,
+body.edit-mode-active .hero-content:hover {
+    outline: 2px dashed rgba(239, 68, 68, 0.6);
+    outline-offset: 4px;
+}

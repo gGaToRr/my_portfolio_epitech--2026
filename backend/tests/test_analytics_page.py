@@ -50,6 +50,31 @@ def test_serie_quotidienne_garde_les_jours_vides(db_session):
     assert vues[-2] == 0 and vues[-3] == 0
 
 
+def test_fenetre_inclut_toute_la_journee_la_plus_ancienne(db_session):
+    """
+    Le début de fenêtre doit être ancré à minuit UTC, pas à l'heure de la
+    requête : sinon, une visite matinale du jour le plus ancien d'une période
+    de N jours manquait selon le moment où le tableau de bord était consulté,
+    et ce jour paraissait moins actif qu'il ne l'était vraiment.
+    """
+    # Tout début du jour le plus ancien d'une période de 7 jours (borne incluse).
+    _vue(db_session, jours_avant=6, heure=0)
+
+    libelles, vues, visiteurs = aq.serie_quotidienne(db_session, 7)
+    assert vues[0] == 1  # premier point de la série = jour le plus ancien
+
+    totaux = aq.totaux(db_session, 7)
+    assert totaux["pages_vues"] == 1
+
+
+def test_fenetre_exclut_la_veille_de_la_periode(db_session):
+    """Symétrique du test précédent : la journée juste avant la période reste hors fenêtre."""
+    _vue(db_session, jours_avant=7, heure=23)
+
+    totaux = aq.totaux(db_session, 7)
+    assert totaux["pages_vues"] == 0
+
+
 def test_pages_admin_exclues_du_trafic_public(db_session):
     """
     Les pages du panneau ne sont visitées que par le propriétaire : les compter

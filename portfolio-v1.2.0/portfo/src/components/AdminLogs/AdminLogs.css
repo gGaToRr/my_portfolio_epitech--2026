@@ -272,3 +272,122 @@
     font-size: 0.85rem;
 }
 
+/* ==============================================================================
+   Responsive Design for Admin Logs
+   ============================================================================== */
+
+@media (max-width: 900px) {
+    .admin-logs-view {
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-strong) transparent;
+        padding-right: 4px;
+        padding-bottom: 80px;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-logs-view::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .admin-logs-view::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .admin-logs-view::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 6px;
+    }
+
+    .admin-logs-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .admin-logs-search-box {
+        max-width: 100%;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .admin-logs-filter-group {
+        width: 100%;
+        gap: 6px;
+    }
+
+    .admin-logs-console-card {
+        min-height: 380px;
+        height: 440px;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-logs-toolbar-card {
+        padding: 10px 14px;
+        border-radius: 16px;
+        gap: 8px;
+    }
+
+    .admin-logs-console-card {
+        padding: 10px 10px;
+        border-radius: 14px;
+        min-height: 340px;
+        height: 380px;
+    }
+
+    .admin-logs-title {
+        font-size: 1.15rem;
+    }
+
+    .admin-logs-search-input {
+        padding: 7px 12px;
+        font-size: 0.84rem;
+    }
+
+    .admin-logs-filter-btn {
+        padding: 5px 9px;
+        font-size: 0.78rem;
+    }
+
+    .admin-logs-console {
+        padding: 8px 10px;
+        font-size: 0.72rem;
+        overflow-x: auto;
+    }
+
+    .admin-logs-line {
+        padding: 1px 3px;
+        font-size: 0.70rem;
+    }
+
+    .admin-logs-line-num {
+        min-width: 22px;
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-logs-title {
+        font-size: 1.05rem;
+    }
+
+    .admin-logs-console-card {
+        min-height: 300px;
+        height: 340px;
+    }
+
+    .admin-logs-console {
+        padding: 6px 6px;
+    }
+
+    .admin-logs-line {
+        font-size: 0.66rem;
+    }
+}
+
+
+

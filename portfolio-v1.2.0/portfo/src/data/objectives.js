@@ -78,4 +78,5 @@ const objectivesData = {
 };
 
 export const getObjectives = (lang = 'en') => objectivesData[lang] || objectivesData.en;
+export { objectivesData };
 export default objectivesData.en;

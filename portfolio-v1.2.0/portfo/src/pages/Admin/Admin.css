@@ -177,7 +177,6 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
     animation: adminFadeIn 0.3s ease;
     margin-bottom: 0 !important;
 }
@@ -187,6 +186,35 @@
     height: 100%;
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0 !important;
+}
+
+.admin-page-analytics {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-bottom: 0 !important;
+}
+
+.admin-page-contents {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    /* Sans ce overflow:hidden, cette section grandissait à la hauteur de son
+       contenu (7 sections listées) au lieu de rester bornée à l'espace
+       disponible sous la toolbar : la zone de scroll interne d'AdminContents
+       n'avait alors jamais rien à faire défiler elle-même. Même traitement
+       que .admin-page-analytics ci-dessus. */
+    overflow: hidden;
     margin-bottom: 0 !important;
 }
 
@@ -197,9 +225,34 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    padding-right: 6px;
+    padding-bottom: 36px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     margin-bottom: 0 !important;
     gap: 14px;
+}
+
+.admin-page-main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-page-main::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-page-main::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 6px;
+}
+
+.admin-page-main::-webkit-scrollbar-thumb:hover {
+    background: var(--accent, #10b981);
 }
 
 /* Collapsible Game Card - Disparition automatique fluide quand System Status est déplié sans perte de données */
@@ -208,15 +261,16 @@
     overflow: hidden;
     transition: flex 0.4s cubic-bezier(0.16, 1, 0.3, 1),
                 opacity 0.35s ease,
-                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                max-height 0.4s ease;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
 }
 
 .admin-pixel-pet-collapsible.is-expanded {
-    flex: 1;
-    min-height: 0;
-    height: 100%;
+    min-height: 300px;
+    height: 360px;
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;
@@ -224,14 +278,22 @@
 }
 
 .admin-pixel-pet-collapsible.is-collapsed {
-    flex: 0;
     max-height: 0px;
     min-height: 0;
+    height: 0;
     opacity: 0;
     transform: translateY(-22px) scale(0.96);
     pointer-events: none;
     margin: 0;
     padding: 0;
+}
+
+@media (min-width: 1200px) {
+    .admin-pixel-pet-collapsible.is-expanded {
+        flex: 1;
+        min-height: 280px;
+        height: auto;
+    }
 }
 
 @keyframes adminFadeIn {
@@ -245,4 +307,178 @@
     }
 }
 
+/* ==============================================================================
+   Responsive Design for Admin Dashboard
+   ============================================================================== */
 
+@media (max-width: 1024px) {
+    .admin-page-main {
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-strong) transparent;
+        padding-right: 4px;
+        padding-bottom: 40px;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+    }
+
+    .admin-page-main::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .admin-page-main::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .admin-page-main::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 6px;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-main-canvas,
+    .admin-main-canvas.App-Main {
+        padding: 0 12px 14px 12px !important;
+        height: calc(100vh - 90px) !important;
+        height: calc(100dvh - 90px) !important;
+        max-height: calc(100vh - 90px) !important;
+        max-height: calc(100dvh - 90px) !important;
+        min-height: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+    }
+
+    .admin-page-main {
+        gap: 12px;
+        padding-bottom: 60px;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+    }
+
+    .admin-login-card {
+        padding: 28px 22px;
+        margin: 12px;
+    }
+
+    .admin-login-brand h2 {
+        font-size: 1.15rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-main-canvas,
+    .admin-main-canvas.App-Main {
+        padding: 0 8px 10px 8px !important;
+        height: calc(100vh - 78px) !important;
+        height: calc(100dvh - 78px) !important;
+        max-height: calc(100vh - 78px) !important;
+        max-height: calc(100dvh - 78px) !important;
+    }
+
+    .admin-login-card {
+        padding: 22px 16px;
+        border-radius: 14px;
+    }
+
+    .admin-login-brand {
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .admin-brand-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.95rem;
+    }
+
+    .admin-login-brand h2 {
+        font-size: 1.05rem;
+    }
+
+    .admin-login-brand p {
+        font-size: 0.76rem;
+    }
+}
+
+/* ==============================================================================
+   Admin Menu Footer Actions (Match standard nav buttons)
+   ============================================================================== */
+
+.admin-header-footer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.admin-menu-action-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    text-align: left;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.admin-menu-action-btn:hover {
+    background-color: var(--surface-hover);
+    border-color: var(--border-strong);
+    color: var(--accent);
+}
+
+.admin-menu-action-btn--logout {
+    color: #ef4444;
+}
+
+.admin-menu-action-btn--logout:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+/* Mobile Drawer Menu Footer */
+.mobile-menu-footer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.mobile-menu-footer-actions .admin-menu-action-btn {
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.mobile-menu-footer-actions .admin-menu-action-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.mobile-menu-footer-actions .admin-menu-action-btn--logout {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+}
+
+.mobile-menu-footer-actions .admin-menu-action-btn--logout:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #ef4444;
+}

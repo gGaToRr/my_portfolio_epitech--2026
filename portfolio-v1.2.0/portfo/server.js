@@ -41,7 +41,6 @@ const MIME_TYPES = {
     '.pdf': 'application/pdf',
     '.woff': 'font/woff',
     '.woff2': 'font/woff2',
-    '.map': 'application/json; charset=utf-8',
 };
 
 // En-têtes de sécurité appliqués à chaque réponse. Le backend FastAPI les posait
@@ -117,6 +116,16 @@ function proxyToBackend(req, res) {
 }
 
 function serveStatic(req, res, pathname) {
+    // Une source map rend le code d'origine : arborescence src/ complète et
+    // contenu des fichiers, directement lisibles dans l'onglet Sources du
+    // navigateur. Le build n'en produit plus (GENERATE_SOURCEMAP=false dans le
+    // script npm), mais un build plus ancien resté dans l'image en contiendrait
+    // encore, et le repli SPA plus bas répondrait 200 sur n'importe quel
+    // chemin : on refuse l'extension ici, indépendamment du contenu de build/.
+    if (pathname.endsWith('.map')) {
+        return sendJson(res, 404, { success: false, message: 'Route introuvable' });
+    }
+
     // `new URL()` normalise déjà "..", "%2e%2e" et les segments vides selon la
     // spécification WHATWG. On revérifie tout de même que le chemin résolu reste
     // sous build/, pour ne pas dépendre d'un détail d'implémentation.

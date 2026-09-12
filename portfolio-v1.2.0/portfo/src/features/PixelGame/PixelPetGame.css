@@ -17,6 +17,7 @@
     position: relative;
     overflow: hidden;
     user-select: none;
+    touch-action: pan-y;
 }
 
 /* En-tête de la carte : Score en haut à gauche, Boutons en haut à droite */
@@ -167,6 +168,7 @@
     align-items: stretch;
     background: transparent;
     border: none;
+    touch-action: pan-y;
 }
 
 .admin-pixel-pet-canvas {
@@ -175,6 +177,7 @@
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    touch-action: pan-y;
 }
 
 /* Bulle de dialogue Pixel Art */

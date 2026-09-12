@@ -85,7 +85,13 @@
     position: absolute;
     top: calc(100% + 6px);
     z-index: 999999;
-    min-width: 230px;
+    min-width: 220px;
+    max-width: calc(100vw - 28px);
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
     background: #11121c; /* Fond plein opaque (dark) */
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 14px;
@@ -111,6 +117,18 @@
 .custom-dropdown-menu.align-left {
     left: 0;
     right: auto;
+}
+
+@media (max-width: 640px) {
+    .custom-dropdown-trigger {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .custom-dropdown-menu {
+        min-width: 180px;
+        max-width: calc(100vw - 20px);
+    }
 }
 
 @keyframes customDropdownFade {

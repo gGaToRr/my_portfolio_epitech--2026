@@ -11,7 +11,7 @@ propriétaire du site — les garder gonflait le compteur de « visiteurs » ave
 propre activité, au point que /panelAdmin représentait l'essentiel du trafic
 mesuré. Le décompte de ces pages reste disponible à part.
 """
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from sqlalchemy import func, distinct, desc
@@ -36,7 +36,15 @@ def _base(db: Session, depuis: datetime, publiques_seulement: bool):
 
 
 def fenetre(jours: int) -> datetime:
-    return datetime.now(timezone.utc) - timedelta(days=jours - 1)
+    """Début (00:00 UTC) du jour le plus ancien inclus dans la période.
+
+    Ancrer sur `now() - (jours-1)` sans tronquer à minuit faisait dépendre le
+    résultat de l'heure de consultation : ouvert le matin, le tableau de bord
+    excluait les visites de la nuit du jour le plus ancien de la période, sous-
+    comptant ce jour-là par rapport aux suivants.
+    """
+    premier_jour = datetime.now(timezone.utc).date() - timedelta(days=jours - 1)
+    return datetime.combine(premier_jour, time.min, tzinfo=timezone.utc)
 
 
 def serie_quotidienne(

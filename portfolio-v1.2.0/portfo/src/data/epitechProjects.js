@@ -118,4 +118,6 @@ const epitechProjectsData = {
 };
 
 export const getEpitechProjects = (lang = 'en') => epitechProjectsData[lang] || epitechProjectsData.en;
+export { epitechProjectsData };
 export default epitechProjectsData.en;
+

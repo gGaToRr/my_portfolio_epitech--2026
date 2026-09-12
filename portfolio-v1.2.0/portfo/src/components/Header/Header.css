@@ -90,7 +90,28 @@
     background: none;
     border: none;
     cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
 }
+
+.hamburger-button:hover {
+    background: var(--surface-hover);
+}
+
+.App-header-img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    object-fit: contain;
+    transition: filter 0.3s ease;
+}
+
+[data-theme="light"] .App-header-img {
+    filter: brightness(0);
+}
+
+
 
 @media (max-width: 768px) {
     .App-header {
@@ -110,6 +131,21 @@
         padding: 12px 18px;
         margin: 10px;
         box-shadow: 0 4px 20px var(--accent-glow);
+        transition: padding 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                    min-height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                    margin 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                    top 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-radius 0.3s ease,
+                    background-color 0.3s ease;
+    }
+
+    .App-header-container.is-shrunk {
+        min-height: 46px;
+        padding: 6px 14px;
+        margin: 4px 8px;
+        top: 4px;
+        box-shadow: 0 2px 14px var(--accent-glow);
     }
 
     .App-header-top {
@@ -118,14 +154,30 @@
         align-items: flex-start;
         gap: 8px;
         margin-bottom: 0;
+        transition: gap 0.25s ease;
     }
 
     .App-header-top h1 {
         font-size: 20px;
+        transition: font-size 0.25s ease;
+    }
+
+    .App-header-container.is-shrunk .App-header-top {
+        gap: 0;
+    }
+
+    .App-header-container.is-shrunk .App-header-top h1 {
+        font-size: 16px;
     }
 
     .App-header-actions {
         gap: 8px;
+        transition: transform 0.25s ease, gap 0.25s ease;
+    }
+
+    /* En mode rétréci, on ne voit que Pierre Untersinger dans la carte */
+    .App-header-container.is-shrunk .App-header-actions {
+        display: none !important;
     }
 
     .link-pc {
@@ -133,7 +185,19 @@
     }
 
     .hamburger-button {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: padding 0.25s ease, transform 0.25s ease;
+    }
+
+    .App-header-container.is-shrunk .hamburger-button {
+        padding: 4px;
+    }
+
+    .App-header-container.is-shrunk .App-header-img {
+        width: 22px;
+        height: 22px;
     }
 }
 
@@ -143,7 +207,17 @@
         margin: 8px;
     }
 
+    .App-header-container.is-shrunk {
+        padding: 5px 12px;
+        margin: 4px 6px;
+        min-height: 42px;
+    }
+
     .App-header-top h1 {
         font-size: 17px;
+    }
+
+    .App-header-container.is-shrunk .App-header-top h1 {
+        font-size: 14.5px;
     }
 }

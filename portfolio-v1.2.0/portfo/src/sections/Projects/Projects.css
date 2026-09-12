@@ -5,6 +5,16 @@
 
 #projects h2 {
     color: var(--text-strong);
+    margin: 0;
+}
+
+.section-head-with-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
 }
 
 .projects-intro {

@@ -183,5 +183,7 @@ const jobExperiencesData = {
 export const getFormations = (lang = 'en') => formationsData[lang] || formationsData.en;
 export const getJobExperiences = (lang = 'en') => jobExperiencesData[lang] || jobExperiencesData.en;
 
+export { formationsData, jobExperiencesData };
 export const formations = formationsData.en;
 export const jobExperiences = jobExperiencesData.en;
+

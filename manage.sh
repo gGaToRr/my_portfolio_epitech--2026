@@ -28,6 +28,22 @@ NC='\033[0m' # No Color
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOGS_DIR="$ROOT_DIR/backend/logs"
+
+# Environnement virtuel Python : on accepte les deux conventions de nom, venv/
+# et .venv/, plutot que d'imposer la premiere. Renvoie une chaine vide si aucun
+# n'est trouve, pour que l'appelant affiche un message utile.
+find_venv_python() {
+    local candidat
+    for candidat in "$ROOT_DIR/backend/venv" "$ROOT_DIR/backend/.venv"; do
+        if [ -x "$candidat/bin/python" ]; then
+            echo "$candidat/bin/python"
+            return 0
+        fi
+    done
+    return 1
+}
+
+VENV_PYTHON="$(find_venv_python || true)"
 ARCHIVES_DIR="$LOGS_DIR/archives"
 mkdir -p "$LOGS_DIR" "$ARCHIVES_DIR"
 
@@ -57,29 +73,32 @@ service_start() {
     echo -e "${CYAN}===================================================${NC}"
 
     # 1.1 Backend FastAPI
-    if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
-        BACKEND_PID=$(lsof -ti:5001 | head -n1)
-        echo -e "${YELLOW}⚠️  Backend déjà en cours d'exécution sur le port 5001 (PID $BACKEND_PID)${NC}"
+    if lsof -i:5002 -sTCP:LISTEN >/dev/null 2>&1; then
+        BACKEND_PID=$(lsof -ti:5002 | head -n1)
+        echo -e "${YELLOW}⚠️  Backend déjà en cours d'exécution sur le port 5002 (PID $BACKEND_PID)${NC}"
     else
-        echo -e "${CYAN}▶ Démarrage du Backend FastAPI (Port 5001)...${NC}"
+        echo -e "${CYAN}▶ Démarrage du Backend FastAPI (Port 5002)...${NC}"
         cd "$ROOT_DIR/backend"
-        if [ -f "venv/bin/python" ]; then
-            setsid venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 5001 > "$LOGS_DIR/portfolio.log" 2>&1 &
+        if [ -n "$VENV_PYTHON" ]; then
+            setsid "$VENV_PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port 5002 > "$LOGS_DIR/portfolio.log" 2>&1 &
             BACKEND_PID=$!
             echo -e "${GREEN}✓ Backend FastAPI démarré (PID $BACKEND_PID)${NC}"
         else
-            echo -e "${RED}❌ venv introuvable dans backend/venv. Initialisation requise.${NC}"
+            echo -e "${RED}❌ Aucun environnement Python trouvé (backend/venv ni backend/.venv).${NC}"
+            echo -e "${YELLOW}   Créez-le SANS sudo :${NC}"
+            echo -e "     python3 -m venv \"$ROOT_DIR/backend/venv\""
+            echo -e "     \"$ROOT_DIR/backend/venv/bin/pip\" install -r \"$ROOT_DIR/backend/requirements-dev.txt\""
         fi
     fi
 
     # 1.2 Frontend React
-    if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
-        FRONTEND_PID=$(lsof -ti:3006 | head -n1)
-        echo -e "${YELLOW}⚠️  Frontend déjà en cours d'exécution sur le port 3006 (PID $FRONTEND_PID)${NC}"
+    if lsof -i:3007 -sTCP:LISTEN >/dev/null 2>&1; then
+        FRONTEND_PID=$(lsof -ti:3007 | head -n1)
+        echo -e "${YELLOW}⚠️  Frontend déjà en cours d'exécution sur le port 3007 (PID $FRONTEND_PID)${NC}"
     else
-        echo -e "${CYAN}▶ Démarrage du Frontend React (Port 3006)...${NC}"
+        echo -e "${CYAN}▶ Démarrage du Frontend React (Port 3007)...${NC}"
         cd "$ROOT_DIR/portfolio-v1.2.0/portfo"
-        PORT=3006 BROWSER=none setsid npm start > "$LOGS_DIR/frontend.log" 2>&1 &
+        PORT=3007 BROWSER=none setsid npm start > "$LOGS_DIR/frontend.log" 2>&1 &
         FRONTEND_PID=$!
         echo -e "${GREEN}✓ Frontend React démarré (PID $FRONTEND_PID)${NC}"
     fi
@@ -87,11 +106,11 @@ service_start() {
     cd "$ROOT_DIR"
     echo ""
     echo -e "${GREEN}✨ Tous les services sont opérationnels !${NC}"
-    echo -e "   • Frontend : ${CYAN}http://localhost:3006${NC}"
-    echo -e "   • Panel Admin : ${CYAN}http://localhost:3006/panelAdmin${NC}"
-    echo -e "   • Backend API : ${CYAN}http://localhost:5001${NC}"
-    echo -e "   • Swagger UI : ${CYAN}http://localhost:5001/docs${NC}"
-    echo -e "   • Uptime & Status : ${CYAN}http://localhost:5001/status${NC}"
+    echo -e "   • Frontend : ${CYAN}http://localhost:3007${NC}"
+    echo -e "   • Panel Admin : ${CYAN}http://localhost:3007/panelAdmin${NC}"
+    echo -e "   • Backend API : ${CYAN}http://localhost:5002${NC}"
+    echo -e "   • Swagger UI : ${CYAN}http://localhost:5002/docs${NC}"
+    echo -e "   • Uptime & Status : ${CYAN}http://localhost:5002/status${NC}"
     echo -e "${CYAN}===================================================${NC}"
 }
 
@@ -103,23 +122,23 @@ service_stop() {
 
     # Arrêt Backend
     # Note : on arrête ce qui occupe le port, sans vérifier qu'il s'agit bien de
-    # nos processus. Si un autre projet écoute sur 5001 ou 3006, il sera coupé.
-    if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
-        BACKEND_PIDS=$(lsof -ti:5001)
-        echo -e "${YELLOW}Arrêt du Backend sur le port 5001 (PID $BACKEND_PIDS)...${NC}"
+    # nos processus. Si un autre projet écoute sur 5002 ou 3007, il sera coupé.
+    if lsof -i:5002 -sTCP:LISTEN >/dev/null 2>&1; then
+        BACKEND_PIDS=$(lsof -ti:5002)
+        echo -e "${YELLOW}Arrêt du Backend sur le port 5002 (PID $BACKEND_PIDS)...${NC}"
         kill $BACKEND_PIDS 2>/dev/null || true
         sleep 1
-        lsof -ti:5001 | xargs -r kill -9 2>/dev/null || true
+        lsof -ti:5002 | xargs -r kill -9 2>/dev/null || true
     fi
     echo -e "${GREEN}✓ Backend arrêté.${NC}"
 
     # Arrêt Frontend
-    if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
-        FRONTEND_PIDS=$(lsof -ti:3006)
-        echo -e "${YELLOW}Arrêt du Frontend sur le port 3006 (PID $FRONTEND_PIDS)...${NC}"
+    if lsof -i:3007 -sTCP:LISTEN >/dev/null 2>&1; then
+        FRONTEND_PIDS=$(lsof -ti:3007)
+        echo -e "${YELLOW}Arrêt du Frontend sur le port 3007 (PID $FRONTEND_PIDS)...${NC}"
         kill $FRONTEND_PIDS 2>/dev/null || true
         sleep 1
-        lsof -ti:3006 | xargs -r kill -9 2>/dev/null || true
+        lsof -ti:3007 | xargs -r kill -9 2>/dev/null || true
     fi
     echo -e "${GREEN}✓ Frontend arrêté.${NC}"
 
@@ -143,25 +162,25 @@ service_status() {
 
     # Backend
     BACKEND_STATUS="${RED}INACTIF${NC}"
-    if lsof -i:5001 -sTCP:LISTEN >/dev/null 2>&1; then
-        BACKEND_PID=$(lsof -ti:5001 | head -n1)
-        BACKEND_STATUS="${GREEN}ACTIF sur port 5001 (PID $BACKEND_PID)${NC}"
+    if lsof -i:5002 -sTCP:LISTEN >/dev/null 2>&1; then
+        BACKEND_PID=$(lsof -ti:5002 | head -n1)
+        BACKEND_STATUS="${GREEN}ACTIF sur port 5002 (PID $BACKEND_PID)${NC}"
     fi
 
     # Frontend
     FRONTEND_STATUS="${RED}INACTIF${NC}"
-    if lsof -i:3006 -sTCP:LISTEN >/dev/null 2>&1; then
-        FRONTEND_PID=$(lsof -ti:3006 | head -n1)
-        FRONTEND_STATUS="${GREEN}ACTIF sur port 3006 (PID $FRONTEND_PID)${NC}"
+    if lsof -i:3007 -sTCP:LISTEN >/dev/null 2>&1; then
+        FRONTEND_PID=$(lsof -ti:3007 | head -n1)
+        FRONTEND_STATUS="${GREEN}ACTIF sur port 3007 (PID $FRONTEND_PID)${NC}"
     fi
 
-    echo -e " • Backend FastAPI (Port 5001) : $BACKEND_STATUS"
-    echo -e " • Frontend React  (Port 3006) : $FRONTEND_STATUS"
+    echo -e " • Backend FastAPI (Port 5002) : $BACKEND_STATUS"
+    echo -e " • Frontend React  (Port 3007) : $FRONTEND_STATUS"
     echo ""
 
     # Sonde API
-    if curl -s -f http://localhost:5001/status >/dev/null 2>&1; then
-        STATUS_JSON=$(curl -s http://localhost:5001/status)
+    if curl -s -f http://localhost:5002/status >/dev/null 2>&1; then
+        STATUS_JSON=$(curl -s http://localhost:5002/status)
         HEALTH=$(echo "$STATUS_JSON" | grep -o '"status":"[^"]*' | head -n1 | cut -d'"' -f4)
         UPTIME=$(echo "$STATUS_JSON" | grep -o '"uptime_human":"[^"]*' | cut -d'"' -f4)
         REQ_COUNT=$(echo "$STATUS_JSON" | grep -o '"total_requests":[0-9]*' | cut -d':' -f2)
@@ -179,8 +198,8 @@ service_status() {
     fi
 
     # Sonde Frontend
-    if curl -s -f http://localhost:3006 >/dev/null 2>&1; then
-        echo -e "${GREEN}🌐 Sonde Frontend UI   : Accessible sur http://localhost:3006${NC}"
+    if curl -s -f http://localhost:3007 >/dev/null 2>&1; then
+        echo -e "${GREEN}🌐 Sonde Frontend UI   : Accessible sur http://localhost:3007${NC}"
     else
         echo -e "${YELLOW}🌐 Sonde Frontend UI   : En attente ou compilation en cours...${NC}"
     fi
@@ -213,7 +232,11 @@ service_test() {
     # pytest et httpx sont dans requirements-dev.txt : ils ne sont plus installés
     # dans l'image de production.
     cd "$ROOT_DIR"
-    PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/pytest" "$ROOT_DIR/backend/tests/" -v
+    if [ -z "$VENV_PYTHON" ]; then
+        echo -e "${RED}❌ Aucun environnement Python trouvé (backend/venv ni backend/.venv).${NC}"
+        return 1
+    fi
+    PYTHONPATH="$ROOT_DIR/backend" "$VENV_PYTHON" -m pytest "$ROOT_DIR/backend/tests/" -v
     cleanup_traces
 }
 
@@ -221,7 +244,11 @@ service_test() {
 service_archive_logs() {
     echo -e "${CYAN}📦 Archivage mensuel des logs quotidiens en .tar.gz...${NC}"
     cd "$ROOT_DIR"
-    PYTHONPATH="$ROOT_DIR/backend" "$ROOT_DIR/backend/venv/bin/python" "$ROOT_DIR/backend/scripts/log_manager.py" --archive-previous
+    if [ -z "$VENV_PYTHON" ]; then
+        echo -e "${RED}❌ Aucun environnement Python trouvé (backend/venv ni backend/.venv).${NC}"
+        return 1
+    fi
+    PYTHONPATH="$ROOT_DIR/backend" "$VENV_PYTHON" "$ROOT_DIR/backend/scripts/log_manager.py" --archive-previous
     echo -e "${GREEN}✓ Opération d'archivage terminée.${NC}"
 }
 
@@ -231,8 +258,8 @@ service_smtp() {
     echo -e "${CYAN}📧 Diagnostic et Configuration SMTP${NC}"
     echo -e "${CYAN}===================================================${NC}"
 
-    if curl -s -f http://localhost:5001/api/health >/dev/null 2>&1; then
-        HEALTH_RES=$(curl -s http://localhost:5001/api/health)
+    if curl -s -f http://localhost:5002/api/health >/dev/null 2>&1; then
+        HEALTH_RES=$(curl -s http://localhost:5002/api/health)
         echo -e " • Endpoint Healthcheck API : ${GREEN}En ligne${NC}"
         echo -e " • Configuration détectée   : $HEALTH_RES"
     else

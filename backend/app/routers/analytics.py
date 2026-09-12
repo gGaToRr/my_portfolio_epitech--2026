@@ -308,6 +308,7 @@ GRAPHIQUES = (
     "pages",
     "sources",
     "technologies",
+    "fuseaux",
     "ecrans",
 )
 
@@ -391,6 +392,13 @@ def get_analytics_chart(
     elif nom == "technologies":
         svg = charts.chart_technologies(
             aq.top_navigateurs(db, days), aq.top_systemes(db, days), theme
+        )
+
+    elif nom == "fuseaux":
+        donnees = aq.top_fuseaux(db, days)
+        svg = charts.chart_barres_horizontales(
+            [d[0] for d in donnees], [d[1] for d in donnees], theme,
+            message_vide="Aucun fuseau horaire collecté sur la période",
         )
 
     else:  # "ecrans"

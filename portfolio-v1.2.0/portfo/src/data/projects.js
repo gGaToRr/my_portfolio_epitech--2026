@@ -171,4 +171,6 @@ export const getProjectBySlug = (slug, lang = 'en') => {
     return list.find((p) => p.slug === slug);
 };
 
+export { projectsData };
 export default projectsData.en;
+
