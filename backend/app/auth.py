@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -26,6 +27,18 @@ def hash_password(password: str, salt: Optional[str] = None) -> str:
         iterations
     ).hex()
     return f"{salt}${hashed}"
+
+def compute_credential_signature(username: str, hashed_password: str) -> str:
+    """Calcule une signature HMAC-SHA256 liant l'identifiant et le hash au SECRET_KEY."""
+    message = f"{username}:{hashed_password}".encode("utf-8")
+    return hmac.new(settings.SECRET_KEY.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+def verify_credential_signature(username: str, hashed_password: str, signature: Optional[str]) -> bool:
+    """Vérifie l'intégrité cryptographique des identifiants stockés contre toute altération directe en base."""
+    if not signature:
+        return False
+    expected_sig = compute_credential_signature(username, hashed_password)
+    return secrets.compare_digest(expected_sig, signature)
 
 def verify_password(plain_password: str, stored_hash: str) -> bool:
     """Vérifie si le mot de passe correspond au hash stocké."""
@@ -93,6 +106,13 @@ def get_current_admin(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Utilisateur non trouvé",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if user.integrity_signature and not verify_credential_signature(user.username, user.hashed_password, user.integrity_signature):
+        log_error("auth.py", "get_current_admin", f"Accès refusé (401) : Intégrité compromise pour '{username}'")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session invalide",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user

@@ -28,6 +28,9 @@ ADDITIVE_COLUMNS: Dict[str, List[Tuple[str, str]]] = {
         ("viewport_width", "INTEGER"),
         ("timezone", "VARCHAR(64)"),
     ],
+    "admin_users": [
+        ("integrity_signature", "VARCHAR(64)"),
+    ],
 }
 
 

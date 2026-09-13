@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import AdminUser
 from app.schemas import LoginRequest, Token, ChangePasswordRequest
-from app.auth import verify_password, create_access_token, get_current_admin, hash_password
+from app.auth import (
+    verify_password,
+    create_access_token,
+    get_current_admin,
+    hash_password,
+    compute_credential_signature,
+    verify_credential_signature,
+)
 from app.config import settings
 from app.logger import log_success, log_error, log_warning
 from app.security import RateLimiter, get_client_ip, sanitize_log_value
@@ -92,10 +99,11 @@ def login_admin(payload: LoginRequest, request: Request, response: Response, db:
         and _safe_compare(payload.password, settings.ADMIN_PASSWORD)
     )
     if is_bootstrap_login:
-        from app.auth import hash_password
+        hp = hash_password(settings.ADMIN_PASSWORD)
         user = AdminUser(
             username=settings.ADMIN_USERNAME,
-            hashed_password=hash_password(settings.ADMIN_PASSWORD)
+            hashed_password=hp,
+            integrity_signature=compute_credential_signature(settings.ADMIN_USERNAME, hp),
         )
         db.add(user)
         db.commit()
@@ -112,6 +120,20 @@ def login_admin(payload: LoginRequest, request: Request, response: Response, db:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Identifiants incorrects."
         )
+
+    # Vérification de l'intégrité anti-tampering (protection contre injection/altération SQLite directe)
+    if user.integrity_signature:
+        if not verify_credential_signature(user.username, user.hashed_password, user.integrity_signature):
+            record_failed_login(client_ip, payload.username)
+            log_error("auth.py", "login_admin", f"Alerte sécurité : altération d'intégrité détectée pour '{sanitize_log_value(payload.username, 60)}' (IP: {client_ip})")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Identifiants incorrects."
+            )
+    else:
+        # Migration transparente des comptes existants : signature dès la première connexion valide
+        user.integrity_signature = compute_credential_signature(user.username, user.hashed_password)
+        db.commit()
 
     record_successful_login(client_ip, payload.username)
     access_token = create_access_token(data={"sub": user.username})
@@ -191,7 +213,9 @@ def change_password(
         )
 
     change_password_limiter.reset(limiter_key)
-    current_admin.hashed_password = hash_password(payload.new_password)
+    new_hash = hash_password(payload.new_password)
+    current_admin.hashed_password = new_hash
+    current_admin.integrity_signature = compute_credential_signature(current_admin.username, new_hash)
     db.commit()
     log_success("auth.py", "change_password", f"Mot de passe changé avec succès pour '{current_admin.username}' (IP: {client_ip})")
     return {"success": True, "message": "Mot de passe mis à jour."}

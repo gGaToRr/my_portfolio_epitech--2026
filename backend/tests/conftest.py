@@ -35,7 +35,7 @@ os.environ["SMTP_PASS"] = ""
 from app.database import Base, get_db
 from app.main import app
 from app.models import AdminUser
-from app.auth import hash_password, create_access_token
+from app.auth import hash_password, create_access_token, compute_credential_signature
 from app.metrics import metrics_tracker
 from app.routers.auth import login_limiter
 from app.routers.contact import contact_limiter
@@ -78,9 +78,11 @@ def db_session():
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
     
+    hp = hash_password("testpassword123")
     admin = AdminUser(
         username="testadmin",
-        hashed_password=hash_password("testpassword123")
+        hashed_password=hp,
+        integrity_signature=compute_credential_signature("testadmin", hp)
     )
     db.add(admin)
     db.commit()

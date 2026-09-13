@@ -201,3 +201,66 @@ def test_bootstrap_login_with_non_ascii_password_fails_cleanly(client, db_sessio
     })
     assert res.status_code == 401
 
+
+# ---------------------------------------------------------------------------
+# Intégrité cryptographique HMAC anti-tampering
+# ---------------------------------------------------------------------------
+
+def test_tampered_password_in_db_without_valid_hmac_fails_login(client, db_session):
+    from app.models import AdminUser
+    from app.auth import hash_password
+
+    # Un attaquant ayant un accès direct à SQLite tente d'injecter son propre hash
+    attacker_hash = hash_password("attacker_password")
+    admin = db_session.query(AdminUser).filter(AdminUser.username == "testadmin").first()
+    admin.hashed_password = attacker_hash
+    # Il ne connait pas SECRET_KEY donc la signature est invalide ou manquante
+    db_session.commit()
+
+    # Tentative de connexion avec le mot de passe injecté
+    res = client.post("/api/admin/login", json={
+        "username": "testadmin",
+        "password": "attacker_password"
+    })
+    assert res.status_code == 401
+    assert "Identifiants incorrects" in res.json()["detail"]
+
+
+def test_tampered_database_rejects_active_admin_session(client, db_session, auth_headers):
+    from app.models import AdminUser
+    from app.auth import hash_password
+
+    # Session valide au départ
+    res = client.get("/api/admin/me", headers=auth_headers)
+    assert res.status_code == 200
+
+    # Altération directe en base de données
+    admin = db_session.query(AdminUser).filter(AdminUser.username == "testadmin").first()
+    admin.hashed_password = hash_password("hijacked_password")
+    db_session.commit()
+
+    # La session doit être rejetée car l'intégrité de l'utilisateur est rompue
+    res_tampered = client.get("/api/admin/me", headers=auth_headers)
+    assert res_tampered.status_code == 401
+
+
+def test_legacy_account_without_signature_auto_upgrades_on_valid_login(client, db_session):
+    from app.models import AdminUser
+    from app.auth import compute_credential_signature
+
+    admin = db_session.query(AdminUser).filter(AdminUser.username == "testadmin").first()
+    admin.integrity_signature = None
+    db_session.commit()
+
+    res = client.post("/api/admin/login", json={
+        "username": "testadmin",
+        "password": "testpassword123"
+    })
+    assert res.status_code == 200
+
+    # La signature a été automatiquement calculée et persistée
+    db_session.refresh(admin)
+    assert admin.integrity_signature is not None
+    assert admin.integrity_signature == compute_credential_signature("testadmin", admin.hashed_password)
+
+
